@@ -10,7 +10,6 @@ interface HeaderProps {
   activeView: string;
   onNavigate: (view: string) => void;
   activeConcept?: string;
-  onOpenBrandStudio: () => void;
   onOpenSupabaseConfig: () => void;
   savedCount: number;
 }
@@ -18,7 +17,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeView,
   onNavigate,
-  onOpenBrandStudio,
   onOpenSupabaseConfig,
   savedCount
 }) => {
@@ -114,14 +112,14 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: 1 Primary Action + Utility Buttons */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* Logo Concept Tester Button */}
+          {/* Supabase status/config quick link */}
           <button
-            onClick={onOpenBrandStudio}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors shadow-2xs"
-            title="Xem bảng quy chuẩn Brand Guide V2.0 & Lưới Dựng Hình"
+            onClick={onOpenSupabaseConfig}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-emerald-50/70 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors"
+            title="Kết nối cơ sở dữ liệu Supabase"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#E4576E]" />
-            <span>Brand Guide V2.0</span>
+            <Database className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-emerald-700 font-bold">Supabase DB</span>
           </button>
 
           {/* Primary CTA: Đăng bài */}
@@ -209,17 +207,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-            <button
-              onClick={() => { onOpenBrandStudio(); setMobileMenuOpen(false); }}
-              className="text-slate-600 font-semibold flex items-center gap-1.5 py-1.5"
-            >
-              <Sparkles className="w-4 h-4 text-[#E4576E]" /> Ý tưởng Logo A, B, C, D, E
-            </button>
+            <span className="text-slate-400 font-medium">toidep.net</span>
             <button
               onClick={() => { onOpenSupabaseConfig(); setMobileMenuOpen(false); }}
-              className="text-slate-600 font-semibold flex items-center gap-1.5 py-1.5"
+              className="text-emerald-700 font-semibold flex items-center gap-1.5 py-1.5"
             >
-              <Database className="w-4 h-4 text-emerald-600" /> Supabase
+              <Database className="w-4 h-4 text-emerald-600" /> Supabase Database
             </button>
           </div>
         </div>

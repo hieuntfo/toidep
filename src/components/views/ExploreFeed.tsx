@@ -17,7 +17,6 @@ interface ExploreFeedProps {
   likedPostIds: string[];
   onToggleLike: (postId: string) => void;
   onViewSalon: (salonId: string) => void;
-  onOpenBrandStudio: () => void;
 }
 
 export const ExploreFeed: React.FC<ExploreFeedProps> = ({
@@ -29,8 +28,7 @@ export const ExploreFeed: React.FC<ExploreFeedProps> = ({
   savedPostIds,
   likedPostIds,
   onToggleLike,
-  onViewSalon,
-  onOpenBrandStudio
+  onViewSalon
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<HanoiDistrict>('Tất cả Hà Nội');
@@ -96,7 +94,6 @@ export const ExploreFeed: React.FC<ExploreFeedProps> = ({
       <KeyvisualHero
         onBookPillar={handleBookFromPillar}
         onExploreDistrict={(district) => setSelectedDistrict(district as HanoiDistrict)}
-        onOpenBrandStudio={onOpenBrandStudio}
         onSelectPostById={(id) => {
           const found = posts.find(p => p.id === id);
           if (found) onSelectPost(found);

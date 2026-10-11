@@ -17,15 +17,20 @@ import { SeoLandingView } from './components/views/SeoLandingView';
 import { SEO_AREAS, SEO_SERVICES } from './lib/seoData';
 import { PostDetailModal } from './components/modals/PostDetailModal';
 import { BookingSheetModal } from './components/modals/BookingSheetModal';
-import { BrandShowcaseModal } from './components/modals/BrandShowcaseModal';
 import { SupabaseConfigModal } from './components/modals/SupabaseConfigModal';
+import { 
+  fetchRemotePosts, 
+  fetchRemoteSalons, 
+  insertPostToSupabase, 
+  insertBookingToSupabase 
+} from './lib/supabase';
 
 export default function App() {
   // Navigation State
   const [activeView, setActiveView] = useState<string>('explore');
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
 
-  // Application Data States (synced with localStorage)
+  // Application Data States (synced with localStorage & Supabase)
   const [posts, setPosts] = useState<Post[]>(() => {
     const saved = localStorage.getItem('toidep_posts');
     return saved ? JSON.parse(saved) : INITIAL_POSTS;
@@ -77,11 +82,49 @@ export default function App() {
   // Modal States
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [bookingPost, setBookingPost] = useState<{ post: Post; salon: Salon } | null>(null);
-  const [brandStudioOpen, setBrandStudioOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [activeConcept, setActiveConcept] = useState<LogoConcept | 'RECOMMENDED'>('RECOMMENDED');
   const [seoAreaId, setSeoAreaId] = useState<string>('hoan-kiem');
   const [seoServiceSlug, setSeoServiceSlug] = useState<string>('lam-nail');
+
+  // Initial Sync from Supabase
+  useEffect(() => {
+    async function syncRemoteData() {
+      try {
+        const remotePosts = await fetchRemotePosts();
+        if (remotePosts && remotePosts.length > 0) {
+          setPosts(prev => {
+            const remoteMap = new Map(remotePosts.map(p => [p.id, p]));
+            // Combine remote posts with any local-only posts
+            const combined = [...remotePosts];
+            for (const p of prev) {
+              if (!remoteMap.has(p.id)) {
+                combined.push(p);
+              }
+            }
+            return combined;
+          });
+        }
+
+        const remoteSalons = await fetchRemoteSalons();
+        if (remoteSalons && remoteSalons.length > 0) {
+          setSalons(prev => {
+            const remoteMap = new Map(remoteSalons.map(s => [s.id, s]));
+            const combined = [...remoteSalons];
+            for (const s of prev) {
+              if (!remoteMap.has(s.id)) {
+                combined.push(s);
+              }
+            }
+            return combined;
+          });
+        }
+      } catch (err) {
+        console.warn('Initial Supabase sync check:', err);
+      }
+    }
+    syncRemoteData();
+  }, []);
 
   // Persistence effects
   useEffect(() => {
@@ -124,6 +167,8 @@ export default function App() {
 
   const handleConfirmBooking = (newBooking: BookingRequest) => {
     setBookings(prev => [newBooking, ...prev]);
+    // Save to Supabase in background
+    insertBookingToSupabase(newBooking).catch(err => console.warn('Booking sync notice:', err));
   };
 
   const handleUpdateBookingStatus = (bookingId: string, status: 'confirmed' | 'completed' | 'cancelled') => {
@@ -135,9 +180,11 @@ export default function App() {
     setSalons(prev => prev.map(s => s.id === salonId ? { ...s, isVerified: !s.isVerified } : s));
   };
 
-  // Create Lookbook Post
+  // Create Lookbook Post / Product
   const handleCreatePost = (newPost: Post) => {
     setPosts(prev => [newPost, ...prev]);
+    // Save to Supabase in background
+    insertPostToSupabase(newPost).catch(err => console.warn('Post sync notice:', err));
     setActiveView('explore');
     setSelectedPost(newPost);
   };
@@ -154,12 +201,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBFC] text-[#1E1E24]">
-      {/* Header complying with Top Bar Contract */}
+      {/* Header */}
       <Header
         activeView={activeView}
         onNavigate={(view) => setActiveView(view)}
         activeConcept={activeConcept}
-        onOpenBrandStudio={() => setBrandStudioOpen(true)}
         onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
         savedCount={savedPostIds.length}
       />
@@ -177,7 +223,6 @@ export default function App() {
             likedPostIds={likedPostIds}
             onToggleLike={handleToggleLike}
             onViewSalon={handleViewSalon}
-            onOpenBrandStudio={() => setBrandStudioOpen(true)}
           />
         )}
 
@@ -274,7 +319,6 @@ export default function App() {
       {/* Footer */}
       <Footer
         activeConcept={activeConcept}
-        onOpenBrandStudio={() => setBrandStudioOpen(true)}
         onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
         onNavigate={(view) => setActiveView(view)}
       />
@@ -307,14 +351,6 @@ export default function App() {
           onConfirmBooking={handleConfirmBooking}
         />
       )}
-
-      {/* Brand & Logo Identity Studio Modal */}
-      <BrandShowcaseModal
-        isOpen={brandStudioOpen}
-        onClose={() => setBrandStudioOpen(false)}
-        activeConcept={activeConcept}
-        onSelectConcept={(concept) => setActiveConcept(concept)}
-      />
 
       {/* Supabase Connection Modal */}
       <SupabaseConfigModal

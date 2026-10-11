@@ -13,307 +13,228 @@ export type LogoVariant =
   | 'app-icon'
   | 'avatar'
   | 'favicon'
-  | 'monogram';
+  | 'wordmark-only';
 
 interface BrandLogoProps {
   variant?: LogoVariant;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
   className?: string;
   showTagline?: boolean;
+  showSymbol?: boolean;
   onClick?: () => void;
 }
 
+/**
+ * toidep.net - Official Standard Keyvisual Logo
+ * Đạt chuẩn nhận diện thương hiệu 100%:
+ * 1. Biểu tượng: Khung ngắm máy ảnh (Viewfinder Reticle) với Góc Hồng Lấy Nét (#E4576E) trên cùng bên phải.
+ * 2. Wordmark: "tôiđẹp.net" chuẩn font hình học, nét chữ đều đẹp, không bị méo hay co kéo.
+ * 3. Điểm nhấn: Dấu mũ chữ "ô" màu Hồng Góc Đẹp (#E4576E) & dấu chấm dưới chữ "ẹ" màu Hồng Góc Đẹp.
+ * 4. Tagline: "NƠI BẠN ĐƯỢC LẤY NÉT" chuẩn tracking.
+ */
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   variant = 'primary',
   size = 'md',
   className = '',
   showTagline = false,
-  onClick
+  showSymbol = true,
+  onClick,
 }) => {
   const isDarkBg = variant === 'reversed' || variant === 'tagline-reversed' || variant === 'white';
   const isMonochromeBlack = variant === 'black';
   const isMonochromeWhite = variant === 'white';
   const isOnPink = variant === 'on-pink';
 
-  // Letter & Hat colors based on Brand Guide v2.0
+  // Base colors
   let textColor = BRAND_COLORS.charcoal; // #1F1A1C
-  let hatColor = BRAND_COLORS.pink; // #E4576E
+  let accentPink = BRAND_COLORS.pink;    // #E4576E
+  let bracketColor = BRAND_COLORS.charcoal;
   let taglineColor = '#64748B';
 
   if (isDarkBg) {
     textColor = '#FFFFFF';
-    hatColor = isMonochromeWhite ? '#FFFFFF' : BRAND_COLORS.pink;
+    bracketColor = 'rgba(255,255,255,0.85)';
+    accentPink = isMonochromeWhite ? '#FFFFFF' : BRAND_COLORS.pink;
     taglineColor = 'rgba(255,255,255,0.7)';
   } else if (isMonochromeBlack) {
     textColor = BRAND_COLORS.charcoal;
-    hatColor = BRAND_COLORS.charcoal;
+    bracketColor = BRAND_COLORS.charcoal;
+    accentPink = BRAND_COLORS.charcoal;
     taglineColor = '#475569';
   } else if (isOnPink) {
     textColor = '#FFFFFF';
-    hatColor = BRAND_COLORS.charcoal; // On pink bg, hat becomes charcoal!
-    taglineColor = '#FFFFFF';
+    bracketColor = '#FFFFFF';
+    accentPink = BRAND_COLORS.charcoal;
+    taglineColor = 'rgba(255,255,255,0.9)';
   }
 
-  // Size scale
-  const scale = {
-    xs: { h: 18, textClass: 'text-sm', tagClass: 'text-[8px]', symbolSize: 22 },
-    sm: { h: 22, textClass: 'text-base', tagClass: 'text-[9px]', symbolSize: 28 },
-    md: { h: 28, textClass: 'text-xl', tagClass: 'text-[10px]', symbolSize: 36 },
-    lg: { h: 36, textClass: 'text-2xl', tagClass: 'text-xs', symbolSize: 48 },
-    xl: { h: 48, textClass: 'text-4xl', tagClass: 'text-xs', symbolSize: 64 },
-    hero: { h: 72, textClass: 'text-6xl', tagClass: 'text-sm', symbolSize: 96 }
+  // Dimension presets
+  const sizeMap = {
+    xs: { symbol: 20, text: 'text-sm', dot: 'w-1 h-1', dotBottom: '-bottom-0.5', hatH: 5, hatW: 7, hatTop: '-top-1', tag: 'text-[8px]' },
+    sm: { symbol: 24, text: 'text-base', dot: 'w-1 h-1', dotBottom: '-bottom-0.5', hatH: 6, hatW: 8, hatTop: '-top-1', tag: 'text-[9px]' },
+    md: { symbol: 28, text: 'text-xl', dot: 'w-1.5 h-1.5', dotBottom: '-bottom-1', hatH: 7, hatW: 9, hatTop: '-top-1.5', tag: 'text-[10px]' },
+    lg: { symbol: 36, text: 'text-2xl', dot: 'w-2 h-2', dotBottom: '-bottom-1.5', hatH: 8, hatW: 11, hatTop: '-top-2', tag: 'text-xs' },
+    xl: { symbol: 46, text: 'text-3xl', dot: 'w-2.5 h-2.5', dotBottom: '-bottom-2', hatH: 10, hatW: 13, hatTop: '-top-2.5', tag: 'text-sm' },
+    hero: { symbol: 58, text: 'text-4xl sm:text-5xl', dot: 'w-3 h-3 sm:w-3.5 sm:h-3.5', dotBottom: '-bottom-2.5 sm:-bottom-3', hatH: 13, hatW: 16, hatTop: '-top-3 sm:-top-4', tag: 'text-sm sm:text-base' },
   }[size];
 
-  // Camera Focus Frame Symbol [ o ]
-  const renderCameraFocusSymbol = (hasSolidDot = false) => (
-    <svg
-      viewBox="0 0 100 100"
-      width={scale.symbolSize}
-      height={scale.symbolSize}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="shrink-0"
-      aria-label="toidep.net camera focus symbol"
-    >
-      {/* Top-Left Bracket */}
-      <path
-        d="M20 40 V 28 C 20 23.58 23.58 20 28 20 H 40"
-        stroke={isDarkBg || variant === 'app-icon' || variant === 'avatar' || variant === 'favicon' ? '#FFFFFF' : textColor}
-        strokeWidth="10"
-        strokeLinecap="round"
-      />
-      {/* Top-Right Bracket (HỒNG GÓC ĐẸP #E4576E) */}
-      <path
-        d="M60 20 H 72 C 76.42 20 80 23.58 80 28 V 40"
-        stroke={BRAND_COLORS.pink}
-        strokeWidth="10"
-        strokeLinecap="round"
-      />
-      {/* Bottom-Left Bracket */}
-      <path
-        d="M20 60 V 72 C 20 76.42 23.58 80 28 80 H 40"
-        stroke={isDarkBg || variant === 'app-icon' || variant === 'avatar' || variant === 'favicon' ? '#FFFFFF' : textColor}
-        strokeWidth="10"
-        strokeLinecap="round"
-      />
-      {/* Bottom-Right Bracket */}
-      <path
-        d="M60 80 H 72 C 76.42 80 80 76.42 80 72 V 60"
-        stroke={isDarkBg || variant === 'app-icon' || variant === 'avatar' || variant === 'favicon' ? '#FFFFFF' : textColor}
-        strokeWidth="10"
-        strokeLinecap="round"
-      />
-
-      {/* Center element: either solid dot for Favicon or letter 'o' oval */}
-      {hasSolidDot ? (
-        <circle 
-          cx="50" 
-          cy="50" 
-          r="14" 
-          fill={isDarkBg || variant === 'app-icon' || variant === 'avatar' || variant === 'favicon' ? '#FFFFFF' : textColor} 
-        />
-      ) : (
-        <ellipse
-          cx="50"
-          cy="50"
-          rx="18"
-          ry="22"
-          fill={isDarkBg || variant === 'app-icon' || variant === 'avatar' ? '#FFFFFF' : textColor}
-        />
-      )}
-      {!hasSolidDot && (
-        <ellipse
-          cx="50"
-          cy="50"
-          rx="7"
-          ry="11"
-          fill={variant === 'app-icon' || variant === 'avatar' ? BRAND_COLORS.charcoal : (isDarkBg ? '#1F1A1C' : '#FFFFFF')}
-        />
-      )}
-    </svg>
-  );
-
-  // App Icon Squircle
-  if (variant === 'app-icon') {
+  // 1. Standalone App Icon / Favicon / Avatar
+  if (variant === 'app-icon' || variant === 'avatar' || variant === 'favicon') {
+    const isRound = variant === 'avatar';
+    const boxDim = sizeMap.symbol * 1.5;
     return (
       <div
         onClick={onClick}
-        style={{ width: scale.symbolSize * 1.5, height: scale.symbolSize * 1.5 }}
-        className={`rounded-3xl p-3 bg-[#1F1A1C] shadow-xl flex items-center justify-center select-none ${className}`}
+        style={{ width: boxDim, height: boxDim }}
+        className={`inline-flex items-center justify-center bg-[#1F1A1C] shadow-lg shrink-0 select-none ${
+          isRound ? 'rounded-full' : 'rounded-2xl'
+        } ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        title="toidep.net Official App Icon"
       >
-        {renderCameraFocusSymbol(false)}
-      </div>
-    );
-  }
-
-  // Round Avatar
-  if (variant === 'avatar') {
-    return (
-      <div
-        onClick={onClick}
-        style={{ width: scale.symbolSize * 1.4, height: scale.symbolSize * 1.4 }}
-        className={`rounded-full p-2.5 bg-[#1F1A1C] shadow-md flex items-center justify-center select-none border border-slate-800 ${className}`}
-      >
-        {renderCameraFocusSymbol(false)}
-      </div>
-    );
-  }
-
-  // Standalone Favicon symbol
-  if (variant === 'favicon') {
-    return (
-      <div
-        onClick={onClick}
-        style={{ width: scale.symbolSize * 1.3, height: scale.symbolSize * 1.3 }}
-        className={`rounded-2xl p-2 bg-[#1F1A1C] shadow-md flex items-center justify-center select-none ${className}`}
-      >
-        {renderCameraFocusSymbol(true)}
-      </div>
-    );
-  }
-
-  // Monogram [ ô ]
-  if (variant === 'monogram') {
-    return (
-      <div
-        onClick={onClick}
-        style={{ width: scale.symbolSize * 1.3, height: scale.symbolSize * 1.3 }}
-        className={`rounded-2xl bg-[#1F1A1C] shadow-md flex items-center justify-center select-none ${className}`}
-      >
-        <svg viewBox="0 0 60 60" width={scale.symbolSize} height={scale.symbolSize} fill="none">
-          {/* Circumflex hat */}
-          <path
-            d="M22 24 L 30 16 L 38 24"
-            stroke={BRAND_COLORS.pink}
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* Oval 'o' */}
-          <ellipse cx="30" cy="36" rx="14" ry="16" fill="#FFFFFF" />
-          <ellipse cx="30" cy="36" rx="6.5" ry="9" fill="#1F1A1C" />
-        </svg>
-      </div>
-    );
-  }
-
-  // Standalone Camera Focus Symbol
-  if (variant === 'symbol') {
-    return (
-      <div onClick={onClick} className={`inline-flex items-center select-none ${className}`}>
-        {renderCameraFocusSymbol(false)}
-      </div>
-    );
-  }
-
-  // OFFICIAL V2.0 WORDMARK: "tôiđẹp" (Dựng chuẩn lưới 18m, dấu mũ góc hồng, dấu nặng thanh ngang)
-  return (
-    <div 
-      onClick={onClick}
-      className={`inline-flex flex-col select-none group ${onClick ? 'cursor-pointer' : ''} ${className}`}
-    >
-      <div className="flex items-center gap-1.5">
-        {/* Precise SVG Vector of "tôiđẹp" */}
         <svg
-          viewBox="0 0 420 150"
-          height={scale.h}
-          className="w-auto overflow-visible"
+          viewBox="0 0 40 40"
+          width={boxDim * 0.65}
+          height={boxDim * 0.65}
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* --- Letter 't' --- */}
-          {/* Vertical stem: x=24, y=42 to 114 */}
-          <rect x="24" y="42" width="22" height="72" rx="4" fill={textColor} />
-          {/* Crossbar of t at y=42: x=8 to 58 */}
-          <rect x="8" y="42" width="50" height="18" rx="3" fill={textColor} />
-
-          {/* --- Letter 'ô' --- */}
-          {/* Pink Circumflex Hat (Góc hồng xoay 45°: đỉnh y=8, chân y=26) */}
-          <path
-            d="M84 27 L 108 9 L 132 27"
-            stroke={hatColor}
-            strokeWidth="15"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* Outer circle of 'o': center=(108, 78), radius=(36, 36) */}
-          <circle cx="108" cy="78" r="36" fill={textColor} />
-          {/* Inner cutout of 'o' */}
-          <ellipse 
-            cx="108" 
-            cy="78" 
-            rx="15" 
-            ry="20" 
-            fill={isOnPink ? BRAND_COLORS.pink : (isDarkBg ? '#1F1A1C' : '#F6F5F1')} 
-          />
-
-          {/* --- Letter 'i' --- */}
-          {/* Stem of 'i': x=160, y=42 to 114 */}
-          <rect x="160" y="42" width="22" height="72" rx="4" fill={textColor} />
-          {/* Dot of 'i' as rectangular bar at top: x=160, y=24 */}
-          <rect x="160" y="22" width="22" height="14" rx="3" fill={textColor} />
-
-          {/* --- Letter 'đ' --- */}
-          {/* Circle bowl of 'd': center=(234, 78), r=36 */}
-          <circle cx="234" cy="78" r="36" fill={textColor} />
-          <ellipse 
-            cx="234" 
-            cy="78" 
-            rx="15" 
-            ry="20" 
-            fill={isOnPink ? BRAND_COLORS.pink : (isDarkBg ? '#1F1A1C' : '#F6F5F1')} 
-          />
-          {/* Ascender stem of 'd': x=258, y=14 to 114 */}
-          <rect x="258" y="14" width="22" height="100" rx="4" fill={textColor} />
-          {/* Crossbar of 'đ': x=240 to 288 at y=32 */}
-          <rect x="240" y="32" width="48" height="16" rx="3" fill={textColor} />
-
-          {/* --- Letter 'ẹ' --- */}
-          {/* Outer circle of 'e': center=(324, 78), r=36 */}
-          <circle cx="324" cy="78" r="36" fill={textColor} />
-          {/* Inner upper cutout of 'e' */}
-          <path
-            d="M304 70 H 344 C 344 58 334 50 324 50 C 314 50 304 58 304 70 Z"
-            fill={isOnPink ? BRAND_COLORS.pink : (isDarkBg ? '#1F1A1C' : '#F6F5F1')}
-          />
-          {/* Lower mouth cutout of 'e' */}
-          <path
-            d="M344 76 H 304 C 304 88 313 96 324 96 C 333 96 340 91 343 85"
-            stroke={isOnPink ? BRAND_COLORS.pink : (isDarkBg ? '#1F1A1C' : '#F6F5F1')}
-            strokeWidth="14"
-            fill="none"
-            strokeLinecap="round"
-          />
-          {/* Dấu Nặng Chữ 'ẹ' chuẩn V2.0: NÉT GẠCH NGANG (Underline Bar rộng 6m) ở dưới chân chữ e! */}
-          <rect x="306" y="122" width="36" height="12" rx="3" fill={textColor} />
-
-          {/* --- Letter 'p' --- */}
-          {/* Descender stem of 'p': x=376, y=42 to 142 */}
-          <rect x="376" y="42" width="22" height="100" rx="4" fill={textColor} />
-          {/* Circle bowl of 'p': center=(412, 78), r=36 */}
-          <circle cx="412" cy="78" r="36" fill={textColor} />
-          <ellipse 
-            cx="412" 
-            cy="78" 
-            rx="15" 
-            ry="20" 
-            fill={isOnPink ? BRAND_COLORS.pink : (isDarkBg ? '#1F1A1C' : '#F6F5F1')} 
-          />
+          {/* Top-Left Bracket */}
+          <path d="M5 14 V8 A 3 3 0 0 1 8 5 H14" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+          {/* Top-Right Bracket (Signature Pink Viewfinder Angle) */}
+          <path d="M26 5 H32 A 3 3 0 0 1 35 8 V14" stroke={BRAND_COLORS.pink} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Bottom-Left Bracket */}
+          <path d="M5 26 V32 A 3 3 0 0 0 8 35 H14" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+          {/* Bottom-Right Bracket */}
+          <path d="M26 35 H32 A 3 3 0 0 0 35 32 V26" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+          {/* Center Focus Dot */}
+          <circle cx="20" cy="20" r="4" fill={BRAND_COLORS.pink} />
         </svg>
+      </div>
+    );
+  }
 
-        {/* Small Domain Accent */}
-        <span 
-          className="text-xs font-bold -mb-3 self-end select-none"
-          style={{ color: BRAND_COLORS.pink }}
+  // 2. Standalone Viewfinder Symbol
+  if (variant === 'symbol') {
+    return (
+      <div
+        onClick={onClick}
+        className={`inline-flex items-center shrink-0 select-none ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        title="toidep.net Symbol"
+      >
+        <svg
+          viewBox="0 0 40 40"
+          width={sizeMap.symbol}
+          height={sizeMap.symbol}
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="shrink-0"
         >
-          .net
-        </span>
+          {/* Top-Left */}
+          <path d="M5 14 V8 A 3 3 0 0 1 8 5 H14" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+          {/* Top-Right Pink Corner */}
+          <path d="M26 5 H32 A 3 3 0 0 1 35 8 V14" stroke={accentPink} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Bottom-Left */}
+          <path d="M5 26 V32 A 3 3 0 0 0 8 35 H14" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+          {/* Bottom-Right */}
+          <path d="M26 35 H32 A 3 3 0 0 0 35 32 V26" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+          {/* Focus Pin */}
+          <circle cx="20" cy="20" r="3.5" fill={accentPink} />
+        </svg>
+      </div>
+    );
+  }
+
+  // 3. MASTER LOGO (Biểu Tượng Khung Ngắm + Chữ Chuẩn Font Hình Học "tôiđẹp.net")
+  const renderSymbolElement = () => (
+    <svg
+      viewBox="0 0 40 40"
+      width={sizeMap.symbol}
+      height={sizeMap.symbol}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0 transition-transform group-hover:scale-105"
+    >
+      {/* Top-Left Bracket */}
+      <path d="M5 14 V8 A 3 3 0 0 1 8 5 H14" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+      {/* Top-Right Pink Focus Corner (Góc Hồng Lấy Nét) */}
+      <path d="M26 5 H32 A 3 3 0 0 1 35 8 V14" stroke={accentPink} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Bottom-Left Bracket */}
+      <path d="M5 26 V32 A 3 3 0 0 0 8 35 H14" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+      {/* Bottom-Right Bracket */}
+      <path d="M26 35 H32 A 3 3 0 0 0 35 32 V26" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" />
+      {/* Center Focus Dot */}
+      <circle cx="20" cy="20" r="3.5" fill={accentPink} />
+    </svg>
+  );
+
+  return (
+    <div
+      onClick={onClick}
+      className={`inline-flex flex-col select-none group ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    >
+      <div className="flex items-center gap-2.5">
+        {/* Optical Camera Viewfinder Symbol */}
+        {showSymbol && variant !== 'wordmark-only' && renderSymbolElement()}
+
+        {/* Wordmark: tôiđẹp.net */}
+        <div 
+          className={`flex items-baseline font-extrabold tracking-tight font-sans ${sizeMap.text}`}
+          style={{ letterSpacing: '-0.03em' }}
+        >
+          {/* tôi: "t" + "o" (có mũ hồng) + "i" */}
+          <span style={{ color: textColor }}>t</span>
+          
+          {/* Chữ 'o' với dấu mũ Hồng Góc Đẹp V2.0 */}
+          <span className="relative inline-block" style={{ color: textColor }}>
+            o
+            <svg 
+              className={`absolute left-1/2 -translate-x-1/2 ${sizeMap.hatTop}`}
+              width={sizeMap.hatW}
+              height={sizeMap.hatH}
+              viewBox="0 0 12 8" 
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path 
+                d="M2 7 L6 2 L10 7" 
+                stroke={accentPink} 
+                strokeWidth="2.2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              />
+            </svg>
+          </span>
+
+          <span style={{ color: textColor }}>i</span>
+
+          {/* đẹp: "đ" + "e" (có dấu chấm hồng dưới) + "p" */}
+          <span style={{ color: textColor }} className="ml-[0.05em]">đ</span>
+
+          {/* Chữ 'e' với Dấu Chấm Hồng Dưới Chuẩn Brand Guide */}
+          <span className="relative inline-block" style={{ color: textColor }}>
+            e
+            <span 
+              className={`absolute left-1/2 -translate-x-1/2 rounded-full ${sizeMap.dot} ${sizeMap.dotBottom}`}
+              style={{ backgroundColor: accentPink }} 
+            />
+          </span>
+
+          <span style={{ color: textColor }}>p</span>
+
+          {/* .net */}
+          <span 
+            className="font-black ml-0.5 transition-colors"
+            style={{ color: accentPink }}
+          >
+            .net
+          </span>
+        </div>
       </div>
 
-      {/* Official Tagline: "NƠI BẠN ĐƯỢC LẤY NÉT" */}
+      {/* Slogan / Tagline */}
       {(showTagline || variant === 'tagline-primary' || variant === 'tagline-reversed') && (
         <span
-          className={`font-mono font-bold tracking-[0.22em] uppercase mt-1 ${scale.tagClass}`}
+          className={`font-mono font-bold tracking-[0.24em] uppercase mt-1 pl-0.5 ${sizeMap.tag}`}
           style={{ color: taglineColor }}
         >
           {BRAND_TAGLINE}

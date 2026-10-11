@@ -9,14 +9,12 @@ import { BrandLogo } from './BrandLogo';
 interface KeyvisualHeroProps {
   onBookPillar: (pillar: any) => void;
   onExploreDistrict: (district: string) => void;
-  onOpenBrandStudio: () => void;
   onSelectPostById: (postId: string) => void;
 }
 
 export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
   onBookPillar,
   onExploreDistrict,
-  onOpenBrandStudio,
   onSelectPostById
 }) => {
   const [activeKv, setActiveKv] = useState<'hero' | 'toc' | 'mong' | 'moi' | 'splash' | 'story'>('hero');
@@ -194,15 +192,11 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
           </button>
         </div>
 
-        {/* Brand System Trigger */}
-        <button
-          onClick={onOpenBrandStudio}
-          className="text-xs font-semibold text-rose-300 hover:text-white flex items-center gap-1.5 transition-colors shrink-0"
-        >
-          <span className="w-2 h-2 rounded-full bg-[#E4576E]" />
-          <span>Brand Guide V2.0 & Lưới Dựng Hình</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
+        {/* Brand System Tag */}
+        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-rose-300 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-[#E4576E] animate-pulse" />
+          <span className="font-mono text-white/90">toidep.net · NƠI BẠN ĐƯỢC LẤY NÉT</span>
+        </div>
       </div>
 
       {/* --- KV 01: MASTER HERO (1920x1080 Landscape) --- */}
@@ -252,10 +246,11 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
               </button>
 
               <button
-                onClick={onOpenBrandStudio}
-                className="px-5 py-3 text-xs font-semibold text-white bg-white/10 hover:bg-white/15 rounded-xl border border-white/10 transition-colors backdrop-blur-md"
+                onClick={() => onExploreDistrict('Hoàn Kiếm')}
+                className="px-5 py-3 text-xs font-semibold text-white bg-white/10 hover:bg-white/15 rounded-xl border border-white/10 transition-colors backdrop-blur-md flex items-center gap-1.5"
               >
-                Xem Bản Vẽ Lưới Dựng Hình
+                <MapPin className="w-3.5 h-3.5 text-[#E4576E]" />
+                <span>Khám phá salon tại Hà Nội</span>
               </button>
             </div>
           </div>
@@ -327,7 +322,7 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
 
           <div className="relative z-20 flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-white/10 font-mono">
             <BrandLogo variant="reversed" size="xs" showTagline={false} />
-            <span className="text-white font-bold">toidep.net</span>
+            <span className="text-white/80 font-medium tracking-wider text-[11px]">NƠI BẠN ĐƯỢC LẤY NÉT</span>
           </div>
         </div>
       )}
@@ -391,7 +386,7 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
 
           <div className="relative z-20 flex items-center justify-between text-xs text-white/80 pt-4 border-t border-white/20 font-mono">
             <BrandLogo variant="on-pink" size="xs" showTagline={false} />
-            <span className="font-bold text-white">toidep.net</span>
+            <span className="font-medium text-white/90 tracking-wider text-[11px]">NƠI BẠN ĐƯỢC LẤY NÉT</span>
           </div>
         </div>
       )}
@@ -458,7 +453,7 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
 
           <div className="relative z-20 flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-300/80 font-mono">
             <BrandLogo variant="primary" size="xs" showTagline={false} />
-            <span className="font-bold text-[#1F1A1C]">toidep.net</span>
+            <span className="font-semibold text-slate-700 tracking-wider text-[11px]">NƠI BẠN ĐƯỢC LẤY NÉT</span>
           </div>
         </div>
       )}

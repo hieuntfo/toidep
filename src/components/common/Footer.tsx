@@ -5,13 +5,11 @@ import { MapPin, Sparkles, Database, ShieldCheck, Heart } from 'lucide-react';
 
 interface FooterProps {
   activeConcept?: string;
-  onOpenBrandStudio: () => void;
   onOpenSupabaseConfig: () => void;
   onNavigate: (view: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  onOpenBrandStudio,
   onOpenSupabaseConfig,
   onNavigate
 }) => {
@@ -90,18 +88,18 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand Identity & Technology */}
           <div className="space-y-3">
             <h4 className="font-bold text-slate-900 uppercase tracking-wider text-xs">
-              Nhận Diện Thương Hiệu
+              Hạ Tầng Dữ Liệu
             </h4>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
               <button
-                onClick={onOpenBrandStudio}
+                onClick={() => onNavigate('admin')}
                 className="w-full flex items-center justify-between text-left text-xs font-semibold text-slate-800 hover:text-[#E4576E] transition-colors"
               >
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#E4576E]" /> Brand Guide V2.0
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#E4576E]" /> Quản Trị Hệ Thống (CMS)
                 </span>
                 <span className="text-[10px] bg-rose-100 text-[#E4576E] px-1.5 py-0.5 rounded font-mono font-bold">
-                  Grid 18m
+                  Admin
                 </span>
               </button>
               <button
@@ -112,7 +110,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <Database className="w-3.5 h-3.5 text-emerald-600" /> Dữ Liệu Supabase
                 </span>
                 <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-                  Connected
+                  PostgreSQL
                 </span>
               </button>
             </div>

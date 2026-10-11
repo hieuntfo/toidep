@@ -17,6 +17,7 @@ import {
   SUPABASE_SQL_MIGRATION,
   testSupabaseConnection,
   pushSalonsToSupabase,
+  pushPostsToSupabase,
   SupabaseHealthStatus
 } from '../../lib/supabase';
 import { SEO_AREAS, SEO_SERVICES } from '../../lib/seoData';
@@ -125,17 +126,23 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
     setIsSyncingData(true);
     setSyncMessage(null);
     try {
-      const ok = await pushSalonsToSupabase(salons);
-      if (ok) {
-        setSyncMessage('Đã đồng bộ thành công dữ liệu Salons lên Supabase Database!');
+      const [salonRes, postRes] = await Promise.all([
+        pushSalonsToSupabase(salons),
+        pushPostsToSupabase(posts)
+      ]);
+
+      if (salonRes.success && postRes.success) {
+        setSyncMessage(`✅ Thành công! Đã đồng bộ ${salonRes.count} Salons và ${postRes.count} bài đăng/sản phẩm lên Supabase.`);
+      } else if (postRes.success) {
+        setSyncMessage(`✅ Đã đồng bộ ${postRes.count} sản phẩm lên Supabase! (Salons: ${salonRes.message})`);
       } else {
-        setSyncMessage('Đã gửi yêu cầu đồng bộ. Nếu bảng chưa được tạo, vui lòng chạy mã SQL Migration.');
+        setSyncMessage(`⚠️ Kết quả: ${postRes.message || salonRes.message}. Nếu bảng chưa tồn tại, vui lòng chạy SQL Migration.`);
       }
     } catch (err: any) {
       setSyncMessage(`Lỗi đồng bộ: ${err.message}`);
     } finally {
       setIsSyncingData(false);
-      setTimeout(() => setSyncMessage(null), 5000);
+      setTimeout(() => setSyncMessage(null), 6000);
     }
   };
 

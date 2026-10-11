@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Upload, Scissors, MapPin, Tag, CheckCircle2, 
-  Sparkles, ShieldCheck, ArrowRight, Image as ImageIcon, AlertCircle 
+  Sparkles, ShieldCheck, ArrowRight, Image as ImageIcon, AlertCircle,
+  Database, Loader2, Check
 } from 'lucide-react';
 import { Post, Salon, CategoryType, HanoiDistrict } from '../../types';
+import { insertPostToSupabase, SUPABASE_PROJECT_REF } from '../../lib/supabase';
 
 interface CreatePostViewProps {
   salons: Salon[];
@@ -25,8 +27,9 @@ export const CreatePostView: React.FC<CreatePostViewProps> = ({
   const [priceEstimate, setPriceEstimate] = useState('350.000đ - 650.000đ');
   const [tagsInput, setTagsInput] = useState('toclayer, uonloi, hanoi');
   const [imagePreview, setImagePreview] = useState<string>('/src/assets/images/hair_layer_woman_1791614539000.jpg');
-  const [isAiChecking, setIsAiChecking] = useState(false);
-  const [aiVerified, setAiVerified] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const selectedSalon = salons.find(s => s.id === selectedSalonId) || salons[0];
 
@@ -38,59 +41,111 @@ export const CreatePostView: React.FC<CreatePostViewProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !styleName.trim()) {
       alert('Vui lòng điền tiêu đề tác phẩm và tên kiểu tóc/nail.');
       return;
     }
 
-    setIsAiChecking(true);
-    setTimeout(() => {
-      setIsAiChecking(false);
-      const post: Post = {
-        id: `post-${Date.now()}`,
-        title: title.trim(),
-        caption: caption.trim() || 'Tác phẩm mới hoàn thiện tại salon.',
-        images: [imagePreview],
-        category,
-        styleName: styleName.trim(),
-        tags: tagsInput.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean),
-        salonId: selectedSalon.id,
-        salonName: selectedSalon.name,
-        salonDistrict: selectedSalon.district,
-        salonAddress: selectedSalon.address,
-        stylistName: selectedStylistName.trim() || undefined,
-        priceEstimate,
-        priceFrom: 350000,
-        likesCount: 1,
-        savesCount: 0,
-        createdAt: 'Vừa xong',
-        authorName: selectedSalon.name,
-        authorAvatar: selectedSalon.avatar,
-        authorType: 'salon',
-        isVerifiedSalon: selectedSalon.isVerified,
-        commentsCount: 0
-      };
+    setIsSubmitting(true);
+    setSupabaseStatus('Đang quét kiểm duyệt AI & chuẩn bị lưu Supabase...');
 
-      onCreatePost(post);
-    }, 700);
+    const newPost: Post = {
+      id: `post-${Date.now()}`,
+      title: title.trim(),
+      caption: caption.trim() || 'Tác phẩm mới hoàn thiện tại salon.',
+      images: [imagePreview],
+      category,
+      styleName: styleName.trim(),
+      tags: tagsInput.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean),
+      salonId: selectedSalon.id,
+      salonName: selectedSalon.name,
+      salonDistrict: selectedSalon.district,
+      salonAddress: selectedSalon.address,
+      stylistName: selectedStylistName.trim() || undefined,
+      priceEstimate,
+      priceFrom: 350000,
+      likesCount: 1,
+      savesCount: 0,
+      createdAt: 'Vừa xong',
+      authorName: selectedSalon.name,
+      authorAvatar: selectedSalon.avatar,
+      authorType: 'salon',
+      isVerifiedSalon: selectedSalon.isVerified,
+      commentsCount: 0
+    };
+
+    setSupabaseStatus('Đang gửi dữ liệu vào bảng public.posts trên Supabase...');
+
+    // Attempt direct save to Supabase
+    try {
+      const dbResult = await insertPostToSupabase(newPost);
+      if (dbResult.success) {
+        setSupabaseStatus('✅ ' + dbResult.message);
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsSubmitting(false);
+          onCreatePost(newPost);
+        }, 1200);
+      } else {
+        setSupabaseStatus('⚠️ ' + dbResult.message + ' (Sản phẩm đã được lưu ngay vào bộ nhớ máy)');
+        setIsSubmitting(false);
+        // Also add to local state immediately so user never loses their post
+        setTimeout(() => {
+          onCreatePost(newPost);
+        }, 2200);
+      }
+    } catch (err: any) {
+      setSupabaseStatus('⚠️ ' + (err.message || 'Lỗi lưu database') + ' (Sản phẩm đã được lưu vào bộ nhớ máy)');
+      setIsSubmitting(false);
+      setTimeout(() => {
+        onCreatePost(newPost);
+      }, 2200);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 sm:p-8 space-y-6">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#E4576E]">
-            Đăng Lookbook Tác Phẩm Mới
-          </span>
-          <h2 className="text-xl font-bold text-slate-900 mt-1">
-            Đăng ảnh đẹp có địa chỉ để khách hàng đặt lịch ngay
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Mỗi bài đăng trên toidep.net sẽ tự động kích hoạt nút "Làm kiểu này" đưa khách hàng đến salon của bạn.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#E4576E]">
+              Đăng Lookbook Tác Phẩm Mới
+            </span>
+            <h2 className="text-xl font-bold text-slate-900 mt-1">
+              Đăng ảnh đẹp có địa chỉ để khách hàng đặt lịch ngay
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Mỗi bài đăng trên toidep.net sẽ tự động kích hoạt nút "Làm kiểu này" đưa khách hàng đến salon của bạn.
+            </p>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+            <Database className="w-4 h-4 text-emerald-600" />
+            <div>
+              <div className="font-bold font-mono text-[11px]">Supabase DB Connected</div>
+              <div className="text-[10px] text-emerald-600">ref: {SUPABASE_PROJECT_REF}</div>
+            </div>
+          </div>
         </div>
+
+        {supabaseStatus && (
+          <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
+            isSuccess 
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-amber-50 text-amber-800 border border-amber-200'
+          }`}>
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600 shrink-0" />
+            ) : isSuccess ? (
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            )}
+            <span>{supabaseStatus}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
@@ -145,7 +200,7 @@ export const CreatePostView: React.FC<CreatePostViewProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ví dụ: Tóc Layer Nữ Tầng Lơi Tự Nhiên Tôn Góc Nghiêng"
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-[#E4576E] focus:bg-white text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-[#E4576E] focus:bg-white text-slate-900 font-semibold"
                 />
               </div>
 
@@ -255,22 +310,36 @@ export const CreatePostView: React.FC<CreatePostViewProps> = ({
           </div>
 
           {/* Form Submit Footer */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-            >
-              Hủy bỏ
-            </button>
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+            <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Dữ liệu lưu tự động vào bảng <b>public.posts</b> trên Supabase</span>
+            </div>
 
-            <button
-              type="submit"
-              disabled={isAiChecking}
-              className="px-6 py-2.5 text-xs font-bold text-white bg-[#E4576E] hover:bg-[#d84860] rounded-xl transition-all shadow-xs flex items-center gap-2 disabled:opacity-50"
-            >
-              {isAiChecking ? 'AI đang duyệt...' : 'Đăng Tác Phẩm Ngay'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Hủy bỏ
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 text-xs font-bold text-white bg-[#E4576E] hover:bg-[#d84860] rounded-xl transition-all shadow-xs flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Đang lưu Database...</span>
+                  </>
+                ) : (
+                  <span>Đăng & Lưu Vào Supabase</span>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

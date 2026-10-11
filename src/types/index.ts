@@ -77,6 +77,7 @@ export interface Post {
   authorType: 'salon' | 'stylist' | 'customer';
   isVerifiedSalon: boolean;
   commentsCount: number;
+  isSpotlight?: boolean;
 }
 
 export interface Comment {
