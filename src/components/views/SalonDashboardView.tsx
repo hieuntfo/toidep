@@ -22,6 +22,7 @@ export const SalonDashboardView: React.FC<SalonDashboardViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'bookings' | 'analytics' | 'pro'>('bookings');
   const [proModalOpen, setProModalOpen] = useState(false);
+  const [proNotice, setProNotice] = useState<string | null>(null);
 
   const salonBookings = bookings.filter(b => b.salonId === salon.id);
   const pendingCount = salonBookings.filter(b => b.status === 'pending').length;
@@ -319,8 +320,17 @@ export const SalonDashboardView: React.FC<SalonDashboardViewProps> = ({
                 <li className="font-semibold">✓ Thông báo Zalo ZNS tức thì tới chủ salon</li>
               </ul>
 
+              {proNotice && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold animate-in fade-in">
+                  {proNotice}
+                </div>
+              )}
+
               <button
-                onClick={() => alert('Bạn đang sử dụng bản thử nghiệm Salon Pro miễn phí 3 tháng!')}
+                onClick={() => {
+                  setProNotice('🎉 Bạn đang sử dụng bản thử nghiệm Salon Pro miễn phí 3 tháng đầy đủ tính năng!');
+                  setTimeout(() => setProNotice(null), 4000);
+                }}
                 className="w-full py-2.5 text-xs font-bold text-white bg-[#E4576E] hover:bg-[#d84860] rounded-xl transition-all shadow-xs"
               >
                 Gia Hạn / Kích Hoạt Salon Pro

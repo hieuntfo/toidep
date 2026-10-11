@@ -29,6 +29,31 @@ export const FollowingFeed: React.FC<FollowingFeedProps> = ({
   onViewSalon
 }) => {
   const [followedSalonIds, setFollowedSalonIds] = useState<string[]>(['salon-1', 'salon-2']);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+
+  const handleSharePost = async (post: Post) => {
+    const shareData = {
+      title: `${post.title} — toidep.net`,
+      text: `Mẫu tóc ${post.styleName} tại ${post.salonName}`,
+      url: window.location.href,
+    };
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2500);
+    } catch {
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2500);
+    }
+  };
 
   const toggleFollow = (id: string) => {
     setFollowedSalonIds(prev => 
@@ -186,16 +211,21 @@ export const FollowingFeed: React.FC<FollowingFeedProps> = ({
                       <MessageCircle className="w-6 h-6" />
                     </button>
 
-                    <button
-                      onClick={() => {
-                        navigator.clipboard?.writeText(window.location.href);
-                        alert('Đã copy đường dẫn bài đăng!');
-                      }}
-                      className="text-slate-700 hover:text-slate-900 transition-colors"
-                      aria-label="Chia sẻ"
-                    >
-                      <Share2 className="w-6 h-6" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => handleSharePost(post)}
+                        className="text-slate-700 hover:text-slate-900 transition-colors"
+                        aria-label="Chia sẻ"
+                        title="Chia sẻ liên kết"
+                      >
+                        <Share2 className="w-6 h-6" />
+                      </button>
+                      {copiedPostId === post.id && (
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-slate-900 text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-20">
+                          Đã chép link!
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <button

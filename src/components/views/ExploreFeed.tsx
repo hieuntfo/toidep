@@ -116,13 +116,13 @@ export const ExploreFeed: React.FC<ExploreFeedProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {KEYVISUAL_PILLARS.map((pillar) => (
             <div
               key={pillar.id}
               className="group relative bg-white rounded-3xl border border-slate-300/80 overflow-hidden shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
-              <div className="aspect-4/5 relative overflow-hidden bg-[#1F1A1C]">
+              <div className="aspect-[4/5] relative overflow-hidden bg-[#1F1A1C]">
                 <img
                   src={pillar.image}
                   alt={pillar.title}
@@ -276,7 +276,7 @@ export const ExploreFeed: React.FC<ExploreFeedProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredPosts.map((post) => {
               const salon = salons.find(s => s.id === post.salonId) || salons[0];
               const isSaved = savedPostIds.includes(post.id);
@@ -285,12 +285,12 @@ export const ExploreFeed: React.FC<ExploreFeedProps> = ({
               return (
                 <div
                   key={post.id}
-                  className="group relative bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="group relative bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                 >
                   {/* 4:5 Media Viewport */}
                   <div 
                     onClick={() => onSelectPost(post)}
-                    className="relative aspect-4/5 overflow-hidden bg-slate-900 cursor-pointer"
+                    className="relative aspect-[4/5] overflow-hidden bg-slate-900 cursor-pointer"
                   >
                     <img
                       src={post.images[0]}

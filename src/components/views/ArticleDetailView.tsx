@@ -60,10 +60,30 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
     }
   };
 
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const handleShare = async () => {
+    const shareData = {
+      title: `${article.title} — toidep.net`,
+      text: article.subtitle,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // Fallback to clipboard
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
   };
 
   const relatedSalon = salons.find(s => s.id === article.relatedSalonId);
@@ -72,7 +92,7 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
   return (
     <article className="min-h-screen bg-[#FCFCFD] pb-24 text-slate-900">
       {/* Top Floating Back & Action Bar */}
-      <div className="sticky top-16 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
+      <div className="sticky top-16 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <button
             onClick={onBack}

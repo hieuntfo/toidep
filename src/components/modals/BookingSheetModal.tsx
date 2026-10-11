@@ -30,6 +30,7 @@ export const BookingSheetModal: React.FC<BookingSheetModalProps> = ({
   const [otpSent, setOtpSent] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [validationError, setValidationError] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -45,8 +46,9 @@ export const BookingSheetModal: React.FC<BookingSheetModalProps> = ({
   ];
 
   const handleSendOtp = () => {
+    setValidationError('');
     if (!customerPhone || customerPhone.length < 9) {
-      alert('Vui lòng nhập số điện thoại hợp lệ để nhận mã xác thực OTP.');
+      setValidationError('Vui lòng nhập số điện thoại hợp lệ để nhận mã xác thực OTP.');
       return;
     }
     setOtpSent(true);
@@ -55,12 +57,13 @@ export const BookingSheetModal: React.FC<BookingSheetModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError('');
     if (!customerName.trim()) {
-      alert('Vui lòng nhập họ và tên của bạn.');
+      setValidationError('Vui lòng nhập họ và tên của bạn.');
       return;
     }
     if (!customerPhone.trim()) {
-      alert('Vui lòng nhập số điện thoại để salon liên hệ xác nhận.');
+      setValidationError('Vui lòng nhập số điện thoại để salon liên hệ xác nhận.');
       return;
     }
 
@@ -316,6 +319,12 @@ export const BookingSheetModal: React.FC<BookingSheetModalProps> = ({
           ) : (
             /* Step 2: Thông tin liên hệ & Xác nhận OTP */
             <form onSubmit={handleSubmit} className="space-y-4">
+              {validationError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{validationError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
                   Họ và tên của bạn <span className="text-[#E4576E]">*</span>

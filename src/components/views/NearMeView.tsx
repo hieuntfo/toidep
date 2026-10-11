@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   MapPin, Navigation, Compass, Star, Phone, ArrowRight, Scissors, 
   RefreshCw, CheckCircle2, AlertCircle, ExternalLink, SlidersHorizontal,
-  Car, Footprints, ShieldCheck, Sparkles, LocateFixed, Eye
+  Car, Footprints, ShieldCheck, Sparkles, LocateFixed, Eye, Share2, Check
 } from 'lucide-react';
 import { Salon, Post, HanoiDistrict } from '../../types';
 
@@ -62,6 +62,31 @@ export const NearMeView: React.FC<NearMeViewProps> = ({
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Hoàn Kiếm');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSalonId, setSelectedSalonId] = useState<string>(salons[0]?.id || '');
+  const [copiedShare, setCopiedShare] = useState<boolean>(false);
+
+  const handleShareNearMe = async () => {
+    const shareData = {
+      title: `Salon làm đẹp gần ${locationName} — toidep.net`,
+      text: `Khám phá các salon uy tín trong bán kính ${activeRadius}km quanh ${locationName}`,
+      url: window.location.href,
+    };
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    } catch {
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    }
+  };
 
   // Detect GPS Location on request
   const handleDetectGps = () => {
@@ -171,7 +196,7 @@ export const NearMeView: React.FC<NearMeViewProps> = ({
             </div>
           </div>
 
-          {/* GPS Quick Action */}
+          {/* GPS Quick Action & Share */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleDetectGps}
@@ -187,7 +212,25 @@ export const NearMeView: React.FC<NearMeViewProps> = ({
               ) : (
                 <>
                   <LocateFixed className="w-4 h-4" />
-                  <span>Bật GPS lấy vị trí của tôi</span>
+                  <span>Bật GPS vị trí của tôi</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleShareNearMe}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center gap-1.5"
+              title="Chia sẻ danh sách salon gần bạn"
+            >
+              {copiedShare ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-700">Đã chép link!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 text-slate-500" />
+                  <span>Chia sẻ vị trí</span>
                 </>
               )}
             </button>

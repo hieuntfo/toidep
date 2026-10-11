@@ -309,7 +309,7 @@ export default function App() {
       />
 
       {/* Main View Router */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0">
         {activeView === 'explore' && (
           <ExploreFeed
             posts={posts}
