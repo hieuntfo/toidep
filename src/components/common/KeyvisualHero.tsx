@@ -20,6 +20,24 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
   onSelectPostById
 }) => {
   const [activeKv, setActiveKv] = useState<'hero' | 'toc' | 'mong' | 'moi' | 'splash' | 'story'>('hero');
+  const [reticlePos, setReticlePos] = useState<{ x: number; y: number } | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setReticlePos({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setReticlePos(null);
+  };
+
+  const handleTriggerFocus = () => {
+    setIsLocked(true);
+    setTimeout(() => setIsLocked(false), 900);
+  };
 
   // Helper to render the 4 Camera Focus Viewfinder Corners
   const renderFocusBrackets = (theme: 'charcoal' | 'pink' | 'paper') => {
@@ -50,12 +68,57 @@ export const KeyvisualHero: React.FC<KeyvisualHeroProps> = ({
           className="absolute bottom-0 right-0 w-8 h-8 sm:w-14 sm:h-14 border-b-4 border-r-4 rounded-br-2xl"
           style={{ borderColor: regularBracketColor }}
         />
+
+        {/* Optical HUD metadata */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-3 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-widest text-slate-300 border border-white/10 uppercase">
+          <span className="text-[#E4576E] font-bold">● REC</span>
+          <span>85MM · ƒ/1.4</span>
+          <span>ISO 64</span>
+          <span>1/500s</span>
+          <span className="text-emerald-400 font-bold">AF-C LOCK</span>
+        </div>
       </div>
     );
   };
 
   return (
-    <section className="relative overflow-hidden rounded-3xl shadow-2xl transition-all duration-500 border border-slate-800">
+    <section 
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleTriggerFocus}
+      className="relative overflow-hidden rounded-3xl shadow-2xl transition-all duration-500 border border-slate-800 cursor-crosshair group"
+    >
+      {/* Dynamic Optical Reticle Viewfinder Follower */}
+      {reticlePos && (
+        <div 
+          className="pointer-events-none absolute z-30 transition-transform duration-75 hidden sm:block"
+          style={{ 
+            left: `${reticlePos.x}px`, 
+            top: `${reticlePos.y}px`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div className={`relative transition-all duration-300 ${isLocked ? 'scale-90' : 'scale-100'}`}>
+            {/* Viewfinder crosshair */}
+            <div className={`w-12 h-12 border rounded-full transition-colors ${
+              isLocked ? 'border-emerald-400 bg-emerald-400/10' : 'border-[#E4576E]/80 bg-black/20 backdrop-blur-2xs'
+            }`}>
+              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/30 -translate-y-1/2" />
+              <div className="absolute left-1/2 top-0 h-full w-[1px] bg-white/30 -translate-x-1/2" />
+              <div className={`absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold ${
+                isLocked ? 'text-emerald-400' : 'text-[#E4576E]'
+              }`}>
+                +
+              </div>
+            </div>
+            {/* Reticle HUD Tag */}
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded-sm bg-black/80 text-[8px] font-mono tracking-widest text-white/90 border border-white/20 uppercase">
+              {isLocked ? 'LẤY NÉT CHUẨN' : 'CHẠM ĐỂ LẤY NÉT'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Segmented Tab Switcher Bar */}
       <div className="bg-[#181416] px-4 sm:px-8 py-3.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">

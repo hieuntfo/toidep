@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Sparkles, PlusCircle, Search, Compass, MapPin, 
-  Users, Building2, ShieldAlert, Database, Menu, X 
+  Users, Building2, ShieldAlert, Database, Menu, X, Tag 
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { LogoConcept } from '../../types';
@@ -63,6 +63,19 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Gần bạn
+          </button>
+
+          <button
+            onClick={() => handleNav('seo')}
+            className={`whitespace-nowrap shrink-0 transition-colors py-1 flex items-center gap-1 ${
+              activeView === 'seo' 
+                ? 'text-[#E4576E] border-b-2 border-[#E4576E]' 
+                : 'hover:text-slate-900'
+            }`}
+            title="Khám phá theo quận Hà Nội & danh mục dịch vụ chuẩn SEO"
+          >
+            <span>Khu vực & Dịch vụ</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-rose-100 text-[#E4576E] font-bold rounded-md">SEO</span>
           </button>
 
           <button
@@ -168,6 +181,14 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <MapPin className="w-4 h-4" /> Gần bạn
+            </button>
+            <button
+              onClick={() => handleNav('seo')}
+              className={`p-2.5 rounded-lg text-left flex items-center gap-2 ${
+                activeView === 'seo' ? 'bg-rose-50 text-[#E4576E]' : 'bg-slate-50 text-slate-700'
+              }`}
+            >
+              <Tag className="w-4 h-4" /> Khu vực & Dịch vụ SEO
             </button>
             <button
               onClick={() => handleNav('following')}

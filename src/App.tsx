@@ -13,6 +13,8 @@ import { CreatePostView } from './components/views/CreatePostView';
 import { UserProfileView } from './components/views/UserProfileView';
 import { SalonDashboardView } from './components/views/SalonDashboardView';
 import { AdminCmsView } from './components/views/AdminCmsView';
+import { SeoLandingView } from './components/views/SeoLandingView';
+import { SEO_AREAS, SEO_SERVICES } from './lib/seoData';
 import { PostDetailModal } from './components/modals/PostDetailModal';
 import { BookingSheetModal } from './components/modals/BookingSheetModal';
 import { BrandShowcaseModal } from './components/modals/BrandShowcaseModal';
@@ -78,6 +80,8 @@ export default function App() {
   const [brandStudioOpen, setBrandStudioOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [activeConcept, setActiveConcept] = useState<LogoConcept | 'RECOMMENDED'>('RECOMMENDED');
+  const [seoAreaId, setSeoAreaId] = useState<string>('hoan-kiem');
+  const [seoServiceSlug, setSeoServiceSlug] = useState<string>('lam-nail');
 
   // Persistence effects
   useEffect(() => {
@@ -239,12 +243,30 @@ export default function App() {
           />
         )}
 
+        {activeView === 'seo' && (
+          <SeoLandingView
+            area={SEO_AREAS.find(a => a.id === seoAreaId) || SEO_AREAS[0]}
+            service={SEO_SERVICES.find(s => s.slug === seoServiceSlug) || SEO_SERVICES[0]}
+            salons={salons}
+            posts={posts}
+            onSelectPost={(post) => setSelectedPost(post)}
+            onBookNow={handleBookNow}
+            onViewSalon={handleViewSalon}
+            onChangeArea={(areaId) => setSeoAreaId(areaId)}
+            onChangeService={(serviceSlug) => setSeoServiceSlug(serviceSlug)}
+            onOpenSeoInspector={() => setActiveView('admin')}
+          />
+        )}
+
         {activeView === 'admin' && (
           <AdminCmsView
             salons={salons}
             posts={posts}
+            bookings={bookings}
             onToggleVerifySalon={handleToggleVerifySalon}
             onDeletePost={(postId) => setPosts(prev => prev.filter(p => p.id !== postId))}
+            onUpdateBookingStatus={handleUpdateBookingStatus}
+            onAddSalon={(newSalon) => setSalons(prev => [newSalon, ...prev])}
           />
         )}
       </main>
