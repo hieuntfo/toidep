@@ -135,3 +135,80 @@ export interface LogoDetail {
   weakness: string;
   suitableRole: string;
 }
+
+// User & Authentication Types
+export type UserRole = 'customer' | 'salon_pro' | 'admin';
+export type ProVerificationStatus = 'none' | 'pending' | 'approved' | 'rejected';
+export type AuthProvider = 'email' | 'google' | 'facebook' | 'apple';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  avatar: string;
+  phone?: string;
+  role: UserRole;
+  proStatus: ProVerificationStatus;
+  salonId?: string; // Connected salon for salon_pro
+  registeredAt: string;
+  authProvider: AuthProvider;
+  bio?: string;
+  address?: string;
+}
+
+// Editorial / Longform News Article Types
+export type ArticleCategory = 
+  | 'hair_trends'
+  | 'hair_care'
+  | 'makeup_nail'
+  | 'interviews'
+  | 'technology';
+
+export interface ArticleMediaItem {
+  url: string;
+  caption?: string;
+  credit?: string;
+  aspectRatio?: 'landscape' | 'portrait' | 'square';
+}
+
+export interface ArticleSection {
+  id: string;
+  type: 'paragraph' | 'heading' | 'pullquote' | 'image_break' | 'image_gallery' | 'vertical_video' | 'stylist_tip' | 'service_cta';
+  content?: string;
+  heading?: string;
+  caption?: string;
+  credit?: string;
+  imageUrl?: string;
+  images?: ArticleMediaItem[];
+  videoUrl?: string; // e.g. 9:16 vertical video
+  videoPoster?: string;
+  videoDuration?: string;
+  videoTitle?: string;
+  tipAuthor?: string;
+}
+
+export interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  category: ArticleCategory;
+  categoryLabel: string;
+  coverImage: string;
+  readTime: string; // e.g. "5 phút đọc"
+  author: {
+    name: string;
+    avatar: string;
+    title: string;
+  };
+  publishedAt: string;
+  status: 'published' | 'draft';
+  isFeatured: boolean;
+  viewsCount: number;
+  likesCount: number;
+  sections: ArticleSection[];
+  relatedSalonId?: string;
+  relatedSalonName?: string;
+  relatedPostId?: string;
+  tags: string[];
+}

@@ -10,13 +10,15 @@ interface SalonDashboardViewProps {
   bookings: BookingRequest[];
   onUpdateBookingStatus: (bookingId: string, status: 'confirmed' | 'completed' | 'cancelled') => void;
   onViewSalon: (salonId: string) => void;
+  onOpenEditSalon?: () => void;
 }
 
 export const SalonDashboardView: React.FC<SalonDashboardViewProps> = ({
   salon,
   bookings,
   onUpdateBookingStatus,
-  onViewSalon
+  onViewSalon,
+  onOpenEditSalon
 }) => {
   const [activeTab, setActiveTab] = useState<'bookings' | 'analytics' | 'pro'>('bookings');
   const [proModalOpen, setProModalOpen] = useState(false);
@@ -50,7 +52,18 @@ export const SalonDashboardView: React.FC<SalonDashboardViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onOpenEditSalon && (
+            <button
+              onClick={onOpenEditSalon}
+              className="px-4 py-2 text-xs font-bold text-[#E4576E] bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1.5"
+              title="Khởi tạo và chỉnh sửa thông tin, bảng giá và thợ của trang khách hàng"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Chỉnh sửa trang Salon</span>
+            </button>
+          )}
+
           <button
             onClick={() => onViewSalon(salon.id)}
             className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"

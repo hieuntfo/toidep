@@ -362,3 +362,287 @@ export const LOGO_DIRECTIONS: LogoDetail[] = [
     suitableRole: 'Ý tưởng phụ'
   }
 ];
+
+// Initial Users System
+import { UserProfile, Article } from '../types';
+
+export const INITIAL_USERS: UserProfile[] = [
+  {
+    id: 'usr-admin-1',
+    email: 'admin@toidep.net',
+    fullName: 'Ban Quản Trị toidep.net',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    phone: '0900 888 999',
+    role: 'admin',
+    proStatus: 'none',
+    registeredAt: '01/01/2026',
+    authProvider: 'email',
+    bio: 'Quản trị viên toàn hệ thống nền tảng toidep.net'
+  },
+  {
+    id: 'usr-pro-1',
+    email: 'aurora.salon@gmail.com',
+    fullName: 'Hoàng Minh (Aurora Hair)',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    phone: '0912 345 678',
+    role: 'salon_pro',
+    proStatus: 'approved',
+    salonId: 'salon-1',
+    registeredAt: '15/02/2026',
+    authProvider: 'google',
+    bio: 'Chủ sáng lập Aurora Hair Atelier Hà Nội. Master Stylist đào tạo tại Seoul.',
+    address: '42 Tràng Thi, Hoàn Kiếm, Hà Nội'
+  },
+  {
+    id: 'usr-pro-pending',
+    email: 'hairsoul.hanoi@gmail.com',
+    fullName: 'Vũ Tuấn Kiệt (Hair Soul Studio)',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+    phone: '0977 112 334',
+    role: 'salon_pro',
+    proStatus: 'pending',
+    salonId: '',
+    registeredAt: '09/10/2026',
+    authProvider: 'email',
+    bio: 'Đã nộp hồ sơ nâng cấp Salon Pro 8 ghế tại 120 Cầu Giấy. Chờ Admin phê duyệt.',
+    address: '120 Cầu Giấy, Hà Nội'
+  },
+  {
+    id: 'usr-customer-1',
+    email: 'phuongthao.beauty@gmail.com',
+    fullName: 'Phương Thảo',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+    phone: '0912 345 678',
+    role: 'customer',
+    proStatus: 'none',
+    registeredAt: '20/03/2026',
+    authProvider: 'google',
+    bio: 'Hà Nội · Đam mê các kiểu tóc layer tự nhiên & nail thạch syrup nhẹ nhàng'
+  },
+  {
+    id: 'usr-customer-2',
+    email: 'lequangminh.creative@gmail.com',
+    fullName: 'Lê Quang Minh',
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80',
+    phone: '0963 888 777',
+    role: 'customer',
+    proStatus: 'none',
+    registeredAt: '05/04/2026',
+    authProvider: 'facebook',
+    bio: 'Graphic Designer · Ưa thích kiểu tóc Textured Crop hiện đại'
+  }
+];
+
+// Initial Curated Longform Editorial Articles
+export const INITIAL_ARTICLES: Article[] = [
+  {
+    id: 'art-1',
+    slug: 'xu-huong-toc-layer-song-loi-ha-noi-2026',
+    title: 'Bản Tuyên Ngôn Của Sự Tự Nhiên: Vì Sao Tóc Layer Sóng Lơi Trở Thành Biểu Tượng Của Phụ Nữ Hà Nội 2026?',
+    subtitle: 'Không còn những lọn xoăn đóng khuôn nặng nề, layer sóng lơi kết hợp mái bay (Curtain Bangs) tạo nên độ bồng bềnh sống động theo từng nhịp bước chân giữa tiết thu Hà Nội.',
+    category: 'hair_trends',
+    categoryLabel: 'Xu Hướng Tóc',
+    coverImage: '/src/assets/images/hair_layer_woman_1791614539000.jpg',
+    readTime: '6 phút đọc',
+    author: {
+      name: 'Diệu Linh',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      title: 'Senior Beauty Editor · toidep.net'
+    },
+    publishedAt: '10/10/2026',
+    status: 'published',
+    isFeatured: true,
+    viewsCount: 3840,
+    likesCount: 512,
+    relatedSalonId: 'salon-1',
+    relatedSalonName: 'Aurora Hair Atelier',
+    relatedPostId: 'post-1',
+    tags: ['Layer Nữ', 'Sóng Lơi', 'Curtain Bangs', 'Aurora Hair', 'Xu Hướng 2026'],
+    sections: [
+      {
+        id: 'sec-1',
+        type: 'paragraph',
+        content: 'Những năm gần đây, quan niệm về cái đẹp của phụ nữ hiện đại tại các đô thị lớn như Hà Nội và Sài Gòn đã trải qua một sự chuyển dịch tinh tế nhưng sâu sắc: từ việc phô trương sự cầu kỳ sang tìm kiếm sự tối giản tinh tế (Effortless Chic). Thay vì những lọn xoăn tít dập khuôn hay mái tóc thẳng đơ xơ cứng, tóc layer sóng lơi nổi lên như câu trả lời hoàn mỹ nhất cho mong muốn sở hữu một diện mạo thanh thoát, bay bổng.'
+      },
+      {
+        id: 'sec-2',
+        type: 'pullquote',
+        content: 'Vẻ đẹp đỉnh cao nhất trong tạo mẫu tóc hiện đại là khi bạn bước ra khỏi salon, mái tóc trông tự nhiên và nhẹ bẫng như thể bạn vốn dĩ sinh ra đã có một dòng suối tóc mềm mại như thế.',
+        caption: 'Master Stylist Hoàng Minh · Aurora Hair Atelier'
+      },
+      {
+        id: 'sec-3',
+        type: 'image_break',
+        imageUrl: '/src/assets/images/hair_layer_woman_1791614539000.jpg',
+        caption: 'Từng lớp layer được tỉa so le chuẩn xác 45 độ, ôm trọn xương hàm và tôn lên gò má thon gọn.',
+        credit: 'Lookbook độc quyền bởi Aurora Hair Atelier · Thực hiện tại Tràng Thi, Hà Nội'
+      },
+      {
+        id: 'sec-4',
+        type: 'heading',
+        heading: 'Kỹ Thuật Phân Lớp Không Trọng Lực (Zero-Gravity Layers)'
+      },
+      {
+        id: 'sec-5',
+        type: 'paragraph',
+        content: 'Bí quyết thành công của kiểu tóc này nằm ở kỹ thuật phân tầng. Thợ cắt không tỉa mỏng ngọn tóc một cách ngẫu hứng mà tính toán dựa trên mật độ tóc và cấu trúc hộp sọ của từng người. Lớp ngắn nhất bắt đầu từ ngang cằm, tạo điểm nhấn cho nụ cười, trong khi các lớp dài hơn chạy dọc xuống vai tạo độ phồng tự nhiên mà không cần dùng đến gel hay xịt gôm cứng.'
+      },
+      {
+        id: 'sec-6',
+        type: 'vertical_video',
+        videoTitle: 'Hậu Trường Biến Hóa Layer Sóng Lơi Tại Aurora Hair',
+        videoDuration: '00:45',
+        videoPoster: '/src/assets/images/hair_layer_woman_1791614539000.jpg',
+        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-smiling-with-her-hair-blowing-in-the-wind-41584-large.mp4',
+        caption: 'Thước phim dọc 9:16: Trực tiếp khoảnh khắc Master Stylist sấy tạo phom sóng lơi bằng tay tại salon.',
+        tipAuthor: 'Master Stylist Hoàng Minh'
+      },
+      {
+        id: 'sec-7',
+        type: 'heading',
+        heading: 'Chăm Sóc & Sấy Tạo Kiểu Tại Nhà: Quy Tắc 3 Phút'
+      },
+      {
+        id: 'sec-8',
+        type: 'stylist_tip',
+        content: 'Sau khi gội đầu, dùng khăn bông sợi siêu mịn thấm khô 70% nước. Dùng máy sấy ở chế độ gió ấm, chia tóc làm hai nhánh và cuộn tròn theo hướng ra ngoài khuôn mặt. Thao tác sấy tay này chỉ mất 3 phút vào mỗi buổi sáng nhưng giữ được phom sóng bồng bềnh đến tận ngày hôm sau mà không cần quấn lô qua đêm.'
+      },
+      {
+        id: 'sec-9',
+        type: 'service_cta',
+        heading: 'Muốn trải nghiệm kiểu tóc này?',
+        content: 'Đặt lịch ngay tại Aurora Hair Atelier (42 Tràng Thi, Hoàn Kiếm) để được Master Stylist tư vấn tỉa layer theo khuôn mặt.',
+        credit: 'Giá tham khảo: 850.000đ - 1.150.000đ'
+      }
+    ]
+  },
+  {
+    id: 'art-2',
+    slug: 'nghe-thuat-fade-textured-crop-nam-gioi',
+    title: 'Textured Crop & Low Fade: Cuộc Cách Mạng Phong Cách Của Quý Ông Đô Thị',
+    subtitle: 'Độ tương phản sắc bén giữa những đường fade mượt mà và phần đỉnh đầu cắt tỉa texture tự nhiên — kiểu tóc thống trị mọi barber shop cao cấp Hà Nội.',
+    category: 'hair_trends',
+    categoryLabel: 'Phong Cách Nam',
+    coverImage: '/src/assets/images/hair_crop_man_1791614553705.jpg',
+    readTime: '4 phút đọc',
+    author: {
+      name: 'Trần Vũ',
+      avatar: '/src/assets/images/hair_crop_man_1791614553705.jpg',
+      title: 'Lead Barber · The Hanoi Barber Club'
+    },
+    publishedAt: '08/10/2026',
+    status: 'published',
+    isFeatured: false,
+    viewsCount: 2190,
+    likesCount: 340,
+    relatedSalonId: 'salon-2',
+    relatedSalonName: 'The Hanoi Barber Club',
+    relatedPostId: 'post-2',
+    tags: ['Textured Crop', 'Low Fade', 'Barber Hà Nội', 'Tóc Nam Đẹp'],
+    sections: [
+      {
+        id: 'sec-b1',
+        type: 'paragraph',
+        content: 'Thời kỳ của những kiểu tóc chải chuốt bóng lộn xịt keo cứng đơ đã dần nhường chỗ cho sự năng động và cá tính. Textured Crop là kiểu tóc cắt ngắn hai bên mai và gáy bằng kỹ thuật fade tỉ mỉ, trong khi phần đỉnh đầu được tỉa nhấp so le để tạo thành từng mảng tóc đan xen tự nhiên.'
+      },
+      {
+        id: 'sec-b2',
+        type: 'pullquote',
+        content: 'Đường fade chuẩn là khi chuyển tiếp từ da đầu đến độ dày tóc mượt như một dải gradient, không một vết gờ sắc cạnh.',
+        caption: 'Lead Barber Vũ Trần · 18 Hàng Mành, Hoàn Kiếm'
+      },
+      {
+        id: 'sec-b3',
+        type: 'image_break',
+        imageUrl: '/src/assets/images/hair_crop_man_1791614553705.jpg',
+        caption: 'Góc nghiêng 45 độ làm nổi bật phần viền chân tóc sắc nét và đỉnh đầu có độ phồng thoáng khí.',
+        credit: 'The Hanoi Barber Club · Hà Nội'
+      },
+      {
+        id: 'sec-b4',
+        type: 'vertical_video',
+        videoTitle: 'Kỹ Thuật Đẩy Tông Đơ Low Fade & Cắt Cây Kéo Điêu Luyện',
+        videoDuration: '00:38',
+        videoPoster: '/src/assets/images/hair_crop_man_1791614553705.jpg',
+        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-barber-styling-a-young-mans-hair-in-a-salon-43750-large.mp4',
+        caption: 'Video dọc 9:16 ghi lại khoảnh khắc cạo viền khăn nóng và sáp tạo nếp mờ matte clay.'
+      },
+      {
+        id: 'sec-b5',
+        type: 'stylist_tip',
+        content: 'Chỉ cần một hạt đậu sáp Matte Clay xoa đều lòng bàn tay và xoa rối từ chân tóc lên đỉnh đầu. Tránh dùng gel bóng kẻo mất đi vẻ phong trần tự nhiên.'
+      }
+    ]
+  },
+  {
+    id: 'art-3',
+    slug: 'bi-mat-mong-thach-syrup-kieu-han',
+    title: 'Hiệu Ứng Thạch Nước Trong Veo: Xu Hướng Nail Syrup Hàn Đang Mê Hoặc Giới Trẻ',
+    subtitle: 'Không sơn dày cộm, nail thạch syrup đem lại chiều sâu đa tầng như phủ một lớp sương mai lên đầu ngón tay.',
+    category: 'makeup_nail',
+    categoryLabel: 'Nail & Nghệ Thuật',
+    coverImage: '/src/assets/images/nail_art_jelly_1791614565032.jpg',
+    readTime: '5 phút đọc',
+    author: {
+      name: 'Ngọc Lan',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+      title: 'Nail Artist · Luna & Co Studio'
+    },
+    publishedAt: '05/10/2026',
+    status: 'published',
+    isFeatured: false,
+    viewsCount: 1720,
+    likesCount: 288,
+    relatedSalonId: 'salon-3',
+    relatedSalonName: 'Luna & Co Nail Studio',
+    relatedPostId: 'post-3',
+    tags: ['Nail Thạch Syrup', 'Ombre Nail', 'Luna Studio', 'Nail Hàn Quốc'],
+    sections: [
+      {
+        id: 'sec-n1',
+        type: 'paragraph',
+        content: 'Sơn móng thạch Syrup (Jelly Nails) ra đời từ xứ sở kim chi và nhanh chóng tạo nên cơn sốt. Điểm độc đáo nằm ở độ trong mờ (translucent) cho phép ánh sáng xuyên qua từng lớp sơn, giúp đôi bàn tay trông thanh mảnh và trắng sáng hơn gấp bội.'
+      },
+      {
+        id: 'sec-n2',
+        type: 'image_break',
+        imageUrl: '/src/assets/images/nail_art_jelly_1791614565032.jpg',
+        caption: 'Hiệu ứng gradient ombre thạch đào kết hợp viền nhũ ngọc trai siêu mịn.',
+        credit: 'Luna & Co Studio · 86 Mai Hắc Đế'
+      },
+      {
+        id: 'sec-n3',
+        type: 'stylist_tip',
+        content: 'Nên chọn phom móng Oval hoặc Hạnh nhân ngắn để giữ trọn vẹn nét nhẹ nhàng thanh khiết.'
+      }
+    ]
+  },
+  {
+    id: 'art-4',
+    slug: 'phong-van-doc-quyen-hair-master-seoul',
+    title: '[Bản Nháp CMS] Phỏng Vấn Master Stylist Park Jin-woo: Tương Lai Công Nghệ Uốn Hữu Cơ Không Mùi',
+    subtitle: 'Những cải tiến đột phá trong công nghệ uốn lạnh phân tử hữu cơ giúp phục hồi cấu trúc tủy tóc ngay trong quá trình xử lý hóa chất.',
+    category: 'interviews',
+    categoryLabel: 'Phỏng Vấn & Góc Nhìn',
+    coverImage: '/src/assets/images/salon_interior_hanoi_1791614575750.jpg',
+    readTime: '7 phút đọc',
+    author: {
+      name: 'Ban Biên Tập toidep.net',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      title: 'Tòa Soạn toidep.net'
+    },
+    publishedAt: '11/10/2026',
+    status: 'draft', // Admin can toggle and publish!
+    isFeatured: false,
+    viewsCount: 45,
+    likesCount: 8,
+    tags: ['Công Nghệ Uốn', 'Phỏng Vấn', 'Bản Nháp CMS'],
+    sections: [
+      {
+        id: 'sec-d1',
+        type: 'paragraph',
+        content: 'Đây là bài viết đang ở chế độ Bản Nháp trong hệ thống quản trị CMS. Quản trị viên có thể chỉnh sửa nội dung, kiểm tra ảnh trình diễn và bấm "Xuất bản công khai" để bài xuất hiện trên trang Tạp chí Độc giả.'
+      }
+    ]
+  }
+];

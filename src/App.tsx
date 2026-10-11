@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  INITIAL_POSTS, INITIAL_SALONS, INITIAL_REVIEWS 
+  INITIAL_POSTS, INITIAL_SALONS, INITIAL_REVIEWS, INITIAL_USERS, INITIAL_ARTICLES 
 } from './lib/mockData';
-import { Post, Salon, BookingRequest, Review, LogoConcept } from './types';
+import { Post, Salon, BookingRequest, Review, LogoConcept, Article, UserProfile } from './types';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { ExploreFeed } from './components/views/ExploreFeed';
@@ -14,21 +14,31 @@ import { UserProfileView } from './components/views/UserProfileView';
 import { SalonDashboardView } from './components/views/SalonDashboardView';
 import { AdminCmsView } from './components/views/AdminCmsView';
 import { SeoLandingView } from './components/views/SeoLandingView';
+import { NewsEditorialView } from './components/views/NewsEditorialView';
+import { ArticleDetailView } from './components/views/ArticleDetailView';
 import { SEO_AREAS, SEO_SERVICES } from './lib/seoData';
 import { PostDetailModal } from './components/modals/PostDetailModal';
 import { BookingSheetModal } from './components/modals/BookingSheetModal';
 import { SupabaseConfigModal } from './components/modals/SupabaseConfigModal';
+import { AuthModal } from './components/modals/AuthModal';
+import { SalonOwnerEditModal } from './components/modals/SalonOwnerEditModal';
 import { 
   fetchRemotePosts, 
   fetchRemoteSalons, 
+  fetchRemoteArticles,
+  fetchRemoteUsers,
   insertPostToSupabase, 
-  insertBookingToSupabase 
+  insertBookingToSupabase,
+  insertArticleToSupabase,
+  upsertUserToSupabase,
+  pushSalonsToSupabase
 } from './lib/supabase';
 
 export default function App() {
   // Navigation State
   const [activeView, setActiveView] = useState<string>('explore');
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
+  const [activeArticle, setActiveArticle] = useState<Article | null>(null);
 
   // Application Data States (synced with localStorage & Supabase)
   const [posts, setPosts] = useState<Post[]>(() => {
@@ -39,6 +49,22 @@ export default function App() {
   const [salons, setSalons] = useState<Salon[]>(() => {
     const saved = localStorage.getItem('toidep_salons');
     return saved ? JSON.parse(saved) : INITIAL_SALONS;
+  });
+
+  const [articles, setArticles] = useState<Article[]>(() => {
+    const saved = localStorage.getItem('toidep_articles');
+    return saved ? JSON.parse(saved) : INITIAL_ARTICLES;
+  });
+
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    const saved = localStorage.getItem('toidep_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
+  // Current Logged-In User
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('toidep_current_user');
+    return saved ? JSON.parse(saved) : INITIAL_USERS[3]; // Default logged-in as customer Phương Thảo
   });
 
   const [reviews, setReviews] = useState<Review[]>(() => {
@@ -83,6 +109,10 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [bookingPost, setBookingPost] = useState<{ post: Post; salon: Salon } | null>(null);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [salonEditModalOpen, setSalonEditModalOpen] = useState(false);
+  const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
+
   const [activeConcept, setActiveConcept] = useState<LogoConcept | 'RECOMMENDED'>('RECOMMENDED');
   const [seoAreaId, setSeoAreaId] = useState<string>('hoan-kiem');
   const [seoServiceSlug, setSeoServiceSlug] = useState<string>('lam-nail');
@@ -91,30 +121,52 @@ export default function App() {
   useEffect(() => {
     async function syncRemoteData() {
       try {
-        const remotePosts = await fetchRemotePosts();
+        const [remotePosts, remoteSalons, remoteArticles, remoteUsers] = await Promise.all([
+          fetchRemotePosts(),
+          fetchRemoteSalons(),
+          fetchRemoteArticles(),
+          fetchRemoteUsers()
+        ]);
+
         if (remotePosts && remotePosts.length > 0) {
           setPosts(prev => {
             const remoteMap = new Map(remotePosts.map(p => [p.id, p]));
-            // Combine remote posts with any local-only posts
             const combined = [...remotePosts];
             for (const p of prev) {
-              if (!remoteMap.has(p.id)) {
-                combined.push(p);
-              }
+              if (!remoteMap.has(p.id)) combined.push(p);
             }
             return combined;
           });
         }
 
-        const remoteSalons = await fetchRemoteSalons();
         if (remoteSalons && remoteSalons.length > 0) {
           setSalons(prev => {
             const remoteMap = new Map(remoteSalons.map(s => [s.id, s]));
             const combined = [...remoteSalons];
             for (const s of prev) {
-              if (!remoteMap.has(s.id)) {
-                combined.push(s);
-              }
+              if (!remoteMap.has(s.id)) combined.push(s);
+            }
+            return combined;
+          });
+        }
+
+        if (remoteArticles && remoteArticles.length > 0) {
+          setArticles(prev => {
+            const remoteMap = new Map(remoteArticles.map(a => [a.id, a]));
+            const combined = [...remoteArticles];
+            for (const a of prev) {
+              if (!remoteMap.has(a.id)) combined.push(a);
+            }
+            return combined;
+          });
+        }
+
+        if (remoteUsers && remoteUsers.length > 0) {
+          setUsers(prev => {
+            const remoteMap = new Map(remoteUsers.map(u => [u.id, u]));
+            const combined = [...remoteUsers];
+            for (const u of prev) {
+              if (!remoteMap.has(u.id)) combined.push(u);
             }
             return combined;
           });
@@ -138,6 +190,22 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('toidep_bookings', JSON.stringify(bookings));
   }, [bookings]);
+
+  useEffect(() => {
+    localStorage.setItem('toidep_articles', JSON.stringify(articles));
+  }, [articles]);
+
+  useEffect(() => {
+    localStorage.setItem('toidep_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('toidep_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('toidep_current_user');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('toidep_saved_ids', JSON.stringify(savedPostIds));
@@ -167,7 +235,6 @@ export default function App() {
 
   const handleConfirmBooking = (newBooking: BookingRequest) => {
     setBookings(prev => [newBooking, ...prev]);
-    // Save to Supabase in background
     insertBookingToSupabase(newBooking).catch(err => console.warn('Booking sync notice:', err));
   };
 
@@ -183,7 +250,6 @@ export default function App() {
   // Create Lookbook Post / Product
   const handleCreatePost = (newPost: Post) => {
     setPosts(prev => [newPost, ...prev]);
-    // Save to Supabase in background
     insertPostToSupabase(newPost).catch(err => console.warn('Post sync notice:', err));
     setActiveView('explore');
     setSelectedPost(newPost);
@@ -195,9 +261,38 @@ export default function App() {
     if (selectedPost) setSelectedPost(null);
   };
 
+  // Longform Article navigation
+  const handleSelectArticle = (article: Article) => {
+    setActiveArticle(article);
+    setActiveView('article-detail');
+  };
+
+  // User management updates
+  const handleUpdateUsers = (updatedUsers: UserProfile[]) => {
+    setUsers(updatedUsers);
+    if (currentUser) {
+      const refreshed = updatedUsers.find(u => u.id === currentUser.id);
+      if (refreshed) setCurrentUser(refreshed);
+    }
+  };
+
+  // Salon owner editing
+  const handleOpenSalonEdit = (salon: Salon) => {
+    setEditingSalon(salon);
+    setSalonEditModalOpen(true);
+  };
+
+  const handleSaveSalon = (updated: Salon) => {
+    setSalons(prev => prev.map(s => s.id === updated.id ? updated : s));
+    pushSalonsToSupabase([updated]).catch(err => console.warn('Update salon notice:', err));
+  };
+
   // Find active salon for profile
   const activeSalon = salons.find(s => s.id === activeSalonId) || salons[0];
   const selectedPostSalon = selectedPost ? (salons.find(s => s.id === selectedPost.salonId) || salons[0]) : salons[0];
+
+  // User connected salon if salon_pro
+  const userSalon = salons.find(s => s.id === currentUser?.salonId) || salons[0];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBFC] text-[#1E1E24]">
@@ -208,6 +303,9 @@ export default function App() {
         activeConcept={activeConcept}
         onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
         savedCount={savedPostIds.length}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
+        onLogoutUser={() => setCurrentUser(null)}
       />
 
       {/* Main View Router */}
@@ -232,6 +330,27 @@ export default function App() {
             posts={posts}
             onSelectPost={(post) => setSelectedPost(post)}
             onViewSalon={handleViewSalon}
+            onBookNow={handleBookNow}
+          />
+        )}
+
+        {activeView === 'news' && (
+          <NewsEditorialView
+            articles={articles}
+            onSelectArticle={handleSelectArticle}
+            salons={salons}
+            posts={posts}
+            onOpenAdminCms={() => setActiveView('admin')}
+          />
+        )}
+
+        {activeView === 'article-detail' && activeArticle && (
+          <ArticleDetailView
+            article={activeArticle}
+            onBack={() => setActiveView('news')}
+            salons={salons}
+            posts={posts}
+            onSelectSalon={handleViewSalon}
             onBookNow={handleBookNow}
           />
         )}
@@ -266,6 +385,7 @@ export default function App() {
             salons={salons}
             onCreatePost={handleCreatePost}
             onCancel={() => setActiveView('explore')}
+            onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
           />
         )}
 
@@ -276,15 +396,18 @@ export default function App() {
             salons={salons}
             onSelectPost={(post) => setSelectedPost(post)}
             onViewSalon={handleViewSalon}
+            currentUser={currentUser}
+            onOpenAuthModal={() => setAuthModalOpen(true)}
           />
         )}
 
         {activeView === 'business' && (
           <SalonDashboardView
-            salon={salons[0]}
+            salon={userSalon}
             bookings={bookings}
             onUpdateBookingStatus={handleUpdateBookingStatus}
             onViewSalon={handleViewSalon}
+            onOpenEditSalon={() => handleOpenSalonEdit(userSalon)}
           />
         )}
 
@@ -308,10 +431,20 @@ export default function App() {
             salons={salons}
             posts={posts}
             bookings={bookings}
+            articles={articles}
+            users={users}
             onToggleVerifySalon={handleToggleVerifySalon}
             onDeletePost={(postId) => setPosts(prev => prev.filter(p => p.id !== postId))}
             onUpdateBookingStatus={handleUpdateBookingStatus}
             onAddSalon={(newSalon) => setSalons(prev => [newSalon, ...prev])}
+            onUpdateSalon={handleSaveSalon}
+            onUpdateArticles={(updated) => setArticles(updated)}
+            onUpdateUsers={handleUpdateUsers}
+            onPreviewArticle={(art) => {
+              setActiveArticle(art);
+              setActiveView('article-detail');
+            }}
+            onOpenSalonEdit={handleOpenSalonEdit}
           />
         )}
       </main>
@@ -357,6 +490,34 @@ export default function App() {
         isOpen={supabaseModalOpen}
         onClose={() => setSupabaseModalOpen(false)}
       />
+
+      {/* User Login / Register / Forgot Password Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        currentUser={currentUser}
+        onLogin={(user) => {
+          setCurrentUser(user);
+          // If user role is salon_pro, open salon dashboard
+          if (user.role === 'salon_pro') {
+            setActiveView('business');
+          }
+        }}
+        onLogout={() => setCurrentUser(null)}
+      />
+
+      {/* Salon Owner Edit Modal (Salon Pro) */}
+      {editingSalon && (
+        <SalonOwnerEditModal
+          isOpen={salonEditModalOpen}
+          onClose={() => {
+            setSalonEditModalOpen(false);
+            setEditingSalon(null);
+          }}
+          salon={editingSalon}
+          onSaveSalon={handleSaveSalon}
+        />
+      )}
     </div>
   );
 }

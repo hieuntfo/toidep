@@ -210,7 +210,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           {/* đẹp: "đ" + "e" (có dấu chấm hồng dưới) + "p" */}
           <span style={{ color: textColor }} className="ml-[0.05em]">đ</span>
 
-          {/* Chữ 'e' với Dấu Chấm Hồng Dưới Chuẩn Brand Guide */}
+          {/* Chữ 'e' với Dấu Chấm Hồng Dưới Chuẩn Keyvisual */}
           <span className="relative inline-block" style={{ color: textColor }}>
             e
             <span 

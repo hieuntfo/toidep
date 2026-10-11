@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Bookmark, Calendar, Clock, CheckCircle, MapPin, Scissors, Tag, ArrowRight } from 'lucide-react';
-import { Post, BookingRequest, Salon } from '../../types';
+import { Bookmark, Calendar, Clock, CheckCircle, MapPin, Scissors, Tag, ArrowRight, Sparkles, User, LogIn } from 'lucide-react';
+import { Post, BookingRequest, Salon, UserProfile } from '../../types';
 
 interface UserProfileViewProps {
   savedPosts: Post[];
@@ -8,6 +8,8 @@ interface UserProfileViewProps {
   salons: Salon[];
   onSelectPost: (post: Post) => void;
   onViewSalon: (salonId: string) => void;
+  currentUser?: UserProfile | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({
@@ -15,40 +17,68 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   bookings,
   salons,
   onSelectPost,
-  onViewSalon
+  onViewSalon,
+  currentUser,
+  onOpenAuthModal
 }) => {
   const [activeTab, setActiveTab] = useState<'saved' | 'bookings'>('saved');
+
+  const displayName = currentUser?.fullName || 'Phương Thảo';
+  const displayAvatar = currentUser?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80';
+  const displayBio = currentUser?.bio || 'Hà Nội · Đam mê các kiểu tóc layer tự nhiên & nail thạch syrup nhẹ nhàng';
+  const isSalonPro = currentUser?.role === 'salon_pro';
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Profile Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center sm:items-start gap-6">
-        <img
-          src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"
-          alt="Avatar"
-          className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md"
-        />
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+          <img
+            src={displayAvatar}
+            alt={displayName}
+            className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md"
+          />
 
-        <div className="text-center sm:text-left space-y-1 flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900">Phương Thảo</h2>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 inline-block">
-              @thao.beauty.hn
-            </span>
-          </div>
-          <p className="text-xs text-slate-500">
-            Hà Nội · Đam mê các kiểu tóc layer tự nhiên & nail thạch syrup nhẹ nhàng
-          </p>
-
-          <div className="flex items-center justify-center sm:justify-start gap-6 pt-3 text-xs text-slate-600">
-            <div>
-              <strong className="text-slate-900 font-bold">{savedPosts.length}</strong> bộ sưu tập đã lưu
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <h2 className="text-lg font-bold text-slate-900">{displayName}</h2>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                isSalonPro 
+                  ? 'bg-rose-50 text-[#E4576E] border border-rose-200' 
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {isSalonPro ? '💈 Salon Pro' : '👤 Khách Hàng'}
+              </span>
+              {currentUser?.authProvider && (
+                <span className="text-[10px] text-slate-400 capitalize">
+                  via {currentUser.authProvider}
+                </span>
+              )}
             </div>
-            <div>
-              <strong className="text-slate-900 font-bold">{bookings.length}</strong> lượt hẹn đã đặt
+            <p className="text-xs text-slate-500 max-w-lg">
+              {displayBio}
+            </p>
+
+            <div className="flex items-center justify-center sm:justify-start gap-6 pt-3 text-xs text-slate-600">
+              <div>
+                <strong className="text-slate-900 font-bold">{savedPosts.length}</strong> bộ sưu tập đã lưu
+              </div>
+              <div>
+                <strong className="text-slate-900 font-bold">{bookings.length}</strong> lượt hẹn đã đặt
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Change account / Upgrade */}
+        {onOpenAuthModal && (
+          <button
+            onClick={onOpenAuthModal}
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors shrink-0"
+          >
+            Đổi tài khoản / Nâng Pro
+          </button>
+        )}
       </div>
 
       {/* Segmented Control */}

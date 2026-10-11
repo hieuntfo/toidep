@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Post, Salon, BookingRequest } from '../types';
+import { Post, Salon, BookingRequest, Article, UserProfile } from '../types';
 
 // Project Reference: iglrrhlfvazivudrfued
 export const SUPABASE_PROJECT_REF = 'iglrrhlfvazivudrfued';
@@ -382,6 +382,203 @@ export async function insertBookingToSupabase(
 }
 
 /**
+ * Fetch editorial articles from Supabase REST API
+ */
+export async function fetchRemoteArticles(
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_PUBLISHABLE_KEY
+): Promise<Article[] | null> {
+  try {
+    const res = await fetch(`${url}/rest/v1/articles?select=*&order=created_at.desc`, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(a => ({
+        id: a.id,
+        slug: a.slug,
+        title: a.title,
+        subtitle: a.subtitle || '',
+        category: a.category,
+        categoryLabel: a.category_label || 'Xu Hướng',
+        coverImage: a.cover_image,
+        readTime: a.read_time || '5 phút đọc',
+        author: a.author || { name: 'Ban Biên Tập', avatar: '', title: 'Editor' },
+        publishedAt: a.published_at || '',
+        status: a.status || 'draft',
+        isFeatured: Boolean(a.is_featured),
+        viewsCount: Number(a.views_count || 0),
+        likesCount: Number(a.likes_count || 0),
+        sections: a.sections || [],
+        tags: a.tags || [],
+        relatedSalonId: a.related_salon_id,
+        relatedSalonName: a.related_salon_name,
+        relatedPostId: a.related_post_id
+      }));
+    }
+    return null;
+  } catch (err) {
+    console.warn('Fetch articles notice:', err);
+    return null;
+  }
+}
+
+/**
+ * Insert or update an editorial article in Supabase
+ */
+export async function insertArticleToSupabase(
+  art: Article,
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<boolean> {
+  try {
+    const row = {
+      id: art.id,
+      slug: art.slug,
+      title: art.title,
+      subtitle: art.subtitle,
+      category: art.category,
+      category_label: art.categoryLabel,
+      cover_image: art.coverImage,
+      read_time: art.readTime,
+      author: art.author,
+      published_at: art.publishedAt,
+      status: art.status,
+      is_featured: art.isFeatured,
+      views_count: art.viewsCount,
+      likes_count: art.likesCount,
+      sections: art.sections,
+      tags: art.tags,
+      related_salon_id: art.relatedSalonId || null,
+      related_salon_name: art.relatedSalonName || null,
+      related_post_id: art.relatedPostId || null
+    };
+
+    const res = await fetch(`${url}/rest/v1/articles`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(row)
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Insert article notice:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete an article from Supabase
+ */
+export async function deleteArticleFromSupabase(
+  articleId: string,
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${url}/rest/v1/articles?id=eq.${articleId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Delete article notice:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch user profiles from Supabase
+ */
+export async function fetchRemoteUsers(
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_PUBLISHABLE_KEY
+): Promise<UserProfile[] | null> {
+  try {
+    const res = await fetch(`${url}/rest/v1/user_profiles?select=*`, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(u => ({
+        id: u.id,
+        email: u.email,
+        fullName: u.full_name,
+        avatar: u.avatar,
+        phone: u.phone,
+        role: u.role || 'customer',
+        proStatus: u.pro_status || 'none',
+        salonId: u.salon_id,
+        bio: u.bio,
+        address: u.address,
+        authProvider: u.auth_provider || 'email',
+        registeredAt: u.registered_at || ''
+      }));
+    }
+    return null;
+  } catch (err) {
+    console.warn('Fetch users notice:', err);
+    return null;
+  }
+}
+
+/**
+ * Upsert user profile to Supabase
+ */
+export async function upsertUserToSupabase(
+  user: UserProfile,
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<boolean> {
+  try {
+    const row = {
+      id: user.id,
+      email: user.email,
+      full_name: user.fullName,
+      avatar: user.avatar,
+      phone: user.phone || null,
+      role: user.role,
+      pro_status: user.proStatus,
+      salon_id: user.salonId || null,
+      bio: user.bio || '',
+      address: user.address || '',
+      auth_provider: user.authProvider,
+      registered_at: user.registeredAt
+    };
+
+    const res = await fetch(`${url}/rest/v1/user_profiles`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(row)
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Upsert user notice:', err);
+    return false;
+  }
+}
+
+/**
  * Fetch bookings directly from Supabase REST API
  */
 export async function fetchRemoteBookings(url = DEFAULT_SUPABASE_URL, key = SUPABASE_PUBLISHABLE_KEY): Promise<BookingRequest[] | null> {
@@ -558,6 +755,85 @@ export async function testSupabaseConnection(
 }
 
 /**
+ * Test writes a live probe record to Supabase public.posts
+ * to empirically verify whether write permissions and table exist.
+ */
+export async function testWriteProbeToSupabase(
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<{ success: boolean; message: string; details?: any; latencyMs: number }> {
+  const start = performance.now();
+  const probeId = `probe-${Date.now()}`;
+  const testRow = {
+    id: probeId,
+    title: `[Test Kết Nối] Probe Check lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+    caption: 'Bản ghi kiểm tra kết nối từ toidep.net',
+    images: ['https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'],
+    category: 'hair_female',
+    style_name: 'Test Kết Nối Supabase',
+    tags: ['test', 'supabase'],
+    salon_id: 'salon-1',
+    salon_name: 'Aurora Hair Atelier',
+    salon_district: 'Hoàn Kiếm, Hà Nội',
+    salon_address: '18 Hàng Bông',
+    price_estimate: '350.000đ',
+    price_from: 350000,
+    author_name: 'System Probe',
+    author_avatar: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=120&q=80',
+    is_verified_salon: true
+  };
+
+  try {
+    const res = await fetch(`${url}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(testRow)
+    });
+
+    const latency = Math.round(performance.now() - start);
+
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      return {
+        success: true,
+        message: `Thành công 100%! Đã ghi bản ghi (${probeId}) vào bảng public.posts trên Supabase (${latency}ms). Hãy kiểm tra Supabase Table Editor!`,
+        details: data,
+        latencyMs: latency
+      };
+    }
+
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 404 || err.code === 'PGRST205' || err.message?.includes('schema cache')) {
+      return {
+        success: false,
+        message: 'Supabase đã kết nối, nhưng BẢNG public.posts CHƯA TỒN TẠI (Lỗi PGRST205). Vui lòng dán mã SQL vào Supabase SQL Editor để tạo bảng.',
+        details: err,
+        latencyMs: latency
+      };
+    }
+
+    return {
+      success: false,
+      message: `Lỗi ghi Supabase (${res.status}): ${err.message || 'Không thể ghi'}`,
+      details: err,
+      latencyMs: latency
+    };
+  } catch (e: any) {
+    const latency = Math.round(performance.now() - start);
+    return {
+      success: false,
+      message: `Lỗi kết nối mạng Supabase: ${e.message}`,
+      latencyMs: latency
+    };
+  }
+}
+
+/**
  * SQL Schema migration script for the admin to copy and run in Supabase SQL Editor
  */
 export const SUPABASE_SQL_MIGRATION = `-- ==============================================================
@@ -654,22 +930,72 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Row Level Security & Comprehensive Public Permissions
+-- 5. Create Editorial Longform Articles Table (Tạp chí & Tin tức)
+CREATE TABLE IF NOT EXISTS public.articles (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  category TEXT NOT NULL,
+  category_label TEXT,
+  cover_image TEXT,
+  read_time TEXT DEFAULT '5 phút đọc',
+  author JSONB DEFAULT '{"name": "Ban Biên Tập", "avatar": "", "title": "Editor"}'::jsonb,
+  published_at TEXT,
+  status TEXT DEFAULT 'draft',
+  is_featured BOOLEAN DEFAULT false,
+  views_count INT DEFAULT 0,
+  likes_count INT DEFAULT 0,
+  sections JSONB DEFAULT '[]'::jsonb,
+  tags TEXT[] DEFAULT '{}',
+  related_salon_id TEXT,
+  related_salon_name TEXT,
+  related_post_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Create User Profiles Table (Quản trị User & Duyệt Salon Pro)
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT NOT NULL,
+  avatar TEXT,
+  phone TEXT,
+  role TEXT DEFAULT 'customer',
+  pro_status TEXT DEFAULT 'none',
+  salon_id TEXT,
+  bio TEXT,
+  address TEXT,
+  auth_provider TEXT DEFAULT 'email',
+  registered_at TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. Row Level Security & Comprehensive Public Permissions
 ALTER TABLE public.salons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Allow Public Select
 CREATE POLICY "Public read salons" ON public.salons FOR SELECT USING (true);
 CREATE POLICY "Public read posts" ON public.posts FOR SELECT USING (true);
 CREATE POLICY "Public read reviews" ON public.reviews FOR SELECT USING (true);
 CREATE POLICY "Public read bookings" ON public.bookings FOR SELECT USING (true);
+CREATE POLICY "Public read articles" ON public.articles FOR SELECT USING (true);
+CREATE POLICY "Public read users" ON public.user_profiles FOR SELECT USING (true);
 
--- Allow Public Insert & Upsert so FE can save posts and bookings immediately!
+-- Allow Public Insert & Upsert so FE can save posts, articles, and profiles immediately!
 CREATE POLICY "Public insert posts" ON public.posts FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public update posts" ON public.posts FOR UPDATE USING (true);
 CREATE POLICY "Public insert bookings" ON public.bookings FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public insert salons" ON public.salons FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public update salons" ON public.salons FOR UPDATE USING (true);
+CREATE POLICY "Public insert articles" ON public.articles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update articles" ON public.articles FOR UPDATE USING (true);
+CREATE POLICY "Public delete articles" ON public.articles FOR DELETE USING (true);
+CREATE POLICY "Public insert users" ON public.user_profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update users" ON public.user_profiles FOR UPDATE USING (true);
 `;
