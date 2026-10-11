@@ -1,0 +1,6 @@
+{
+  "name": "toidep.net - Lookbook Làm Đẹp Có Địa Chỉ",
+  "description": "Mạng xã hội hình ảnh làm đẹp Tóc & Nail tại Hà Nội. Mỗi bức ảnh đều gắn với salon, thợ và bảng giá - đặt lịch chỉ với 1 chạm.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
