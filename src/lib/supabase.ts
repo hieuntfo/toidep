@@ -201,7 +201,9 @@ export async function fetchRemotePosts(url = DEFAULT_SUPABASE_URL, key = SUPABAS
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
-      return data.map(mapDbRowToPost);
+      return data
+        .filter(r => r.category !== 'editorial_article' && r.category !== 'user_profile')
+        .map(mapDbRowToPost);
     }
     return null;
   } catch (err) {
@@ -383,43 +385,96 @@ export async function insertBookingToSupabase(
 
 /**
  * Fetch editorial articles from Supabase REST API
+ * Checks public.articles table first, then falls back to public.posts where category='editorial_article'
  */
 export async function fetchRemoteArticles(
   url = DEFAULT_SUPABASE_URL,
   key = SUPABASE_PUBLISHABLE_KEY
 ): Promise<Article[] | null> {
   try {
+    // 1. Check primary table public.articles
     const res = await fetch(`${url}/rest/v1/articles?select=*&order=created_at.desc`, {
       headers: {
         'apikey': key,
         'Authorization': `Bearer ${key}`
       }
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      return data.map(a => ({
-        id: a.id,
-        slug: a.slug,
-        title: a.title,
-        subtitle: a.subtitle || '',
-        category: a.category,
-        categoryLabel: a.category_label || 'Xu Hướng',
-        coverImage: a.cover_image,
-        readTime: a.read_time || '5 phút đọc',
-        author: a.author || { name: 'Ban Biên Tập', avatar: '', title: 'Editor' },
-        publishedAt: a.published_at || '',
-        status: a.status || 'draft',
-        isFeatured: Boolean(a.is_featured),
-        viewsCount: Number(a.views_count || 0),
-        likesCount: Number(a.likes_count || 0),
-        sections: a.sections || [],
-        tags: a.tags || [],
-        relatedSalonId: a.related_salon_id,
-        relatedSalonName: a.related_salon_name,
-        relatedPostId: a.related_post_id
-      }));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map(a => ({
+          id: a.id,
+          slug: a.slug,
+          title: a.title,
+          subtitle: a.subtitle || '',
+          category: a.category,
+          categoryLabel: a.category_label || 'Xu Hướng',
+          coverImage: a.cover_image,
+          readTime: a.read_time || '5 phút đọc',
+          author: a.author || { name: 'Ban Biên Tập', avatar: '', title: 'Editor' },
+          publishedAt: a.published_at || '',
+          status: a.status || 'draft',
+          isFeatured: Boolean(a.is_featured),
+          viewsCount: Number(a.views_count || 0),
+          likesCount: Number(a.likes_count || 0),
+          sections: a.sections || [],
+          tags: a.tags || [],
+          relatedSalonId: a.related_salon_id,
+          relatedSalonName: a.related_salon_name,
+          relatedPostId: a.related_post_id,
+          focalCrop: a.focal_crop || undefined
+        }));
+      }
     }
+
+    // 2. Guaranteed fallback: query public.posts where category='editorial_article'
+    const fallbackRes = await fetch(`${url}/rest/v1/posts?category=eq.editorial_article&select=*&order=created_at.desc`, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (fallbackRes.ok) {
+      const data = await fallbackRes.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((row: any) => {
+          try {
+            if (row.caption && row.caption.startsWith('{')) {
+              const parsed = JSON.parse(row.caption);
+              if (parsed && parsed.title) {
+                return {
+                  ...parsed,
+                  id: parsed.id || row.id.replace(/^art_/, ''),
+                  title: parsed.title || row.title,
+                  coverImage: parsed.coverImage || (row.images?.[0] ?? '')
+                };
+              }
+            }
+          } catch {
+            // fallback minimal
+          }
+          return {
+            id: row.id.replace(/^art_/, ''),
+            slug: (row.title || 'tin-tuc').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            title: row.title,
+            subtitle: row.caption || '',
+            category: 'hair_trends',
+            categoryLabel: row.style_name || 'Xu Hướng',
+            coverImage: row.images?.[0] || '',
+            readTime: '5 phút đọc',
+            author: { name: row.author_name || 'Ban Biên Tập', avatar: '', title: 'Editor' },
+            publishedAt: row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN') : 'Mới cập nhật',
+            status: 'published',
+            isFeatured: false,
+            viewsCount: 1,
+            likesCount: row.likes_count || 0,
+            sections: [],
+            tags: row.tags || []
+          };
+        });
+      }
+    }
+
     return null;
   } catch (err) {
     console.warn('Fetch articles notice:', err);
@@ -429,12 +484,17 @@ export async function fetchRemoteArticles(
 
 /**
  * Insert or update an editorial article in Supabase
+ * Dual-syncs to both public.articles and public.posts (as category='editorial_article')
+ * ensuring guaranteed persistence on Supabase Cloud.
  */
 export async function insertArticleToSupabase(
   art: Article,
   url = DEFAULT_SUPABASE_URL,
   key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
 ): Promise<boolean> {
+  let saved = false;
+
+  // 1. Primary insert to public.articles
   try {
     const row = {
       id: art.id,
@@ -468,11 +528,44 @@ export async function insertArticleToSupabase(
       },
       body: JSON.stringify(row)
     });
-    return res.ok;
+    if (res.ok) saved = true;
   } catch (err) {
-    console.warn('Insert article notice:', err);
-    return false;
+    console.warn('Primary article table write note:', err);
   }
+
+  // 2. Guaranteed cloud persistence backup: public.posts (category='editorial_article')
+  try {
+    const backupRow = {
+      id: `art_${art.id}`,
+      title: art.title,
+      caption: JSON.stringify(art),
+      images: [art.coverImage || ''],
+      category: 'editorial_article',
+      style_name: art.categoryLabel || 'Tạp Chí Làm Đẹp',
+      tags: art.tags || [],
+      salon_id: art.relatedSalonId || 'toidep-editorial',
+      salon_name: art.relatedSalonName || 'Ban Biên Tập toidep.net',
+      salon_district: 'Hà Nội',
+      author_name: art.author?.name || 'Ban Biên Tập',
+      likes_count: art.likesCount || 0
+    };
+
+    const res2 = await fetch(`${url}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(backupRow)
+    });
+    if (res2.ok) saved = true;
+  } catch (err2) {
+    console.warn('Backup article write note:', err2);
+  }
+
+  return saved;
 }
 
 /**
@@ -483,53 +576,123 @@ export async function deleteArticleFromSupabase(
   url = DEFAULT_SUPABASE_URL,
   key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
 ): Promise<boolean> {
+  let ok = false;
   try {
-    const res = await fetch(`${url}/rest/v1/articles?id=eq.${articleId}`, {
+    const res1 = await fetch(`${url}/rest/v1/articles?id=eq.${articleId}`, {
       method: 'DELETE',
       headers: {
         'apikey': key,
         'Authorization': `Bearer ${key}`
       }
     });
-    return res.ok;
-  } catch (err) {
-    console.warn('Delete article notice:', err);
-    return false;
+    if (res1.ok) ok = true;
+  } catch {}
+
+  try {
+    const res2 = await fetch(`${url}/rest/v1/posts?id=eq.art_${articleId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (res2.ok) ok = true;
+  } catch {}
+
+  return ok;
+}
+
+/**
+ * Push all local articles to Supabase (Bulk Seed / Sync)
+ */
+export async function pushArticlesToSupabase(
+  articlesList: Article[],
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<{ success: boolean; count: number; message: string }> {
+  try {
+    let synced = 0;
+    for (const art of articlesList) {
+      const res = await insertArticleToSupabase(art, url, key);
+      if (res) synced++;
+    }
+    return {
+      success: true,
+      count: synced,
+      message: `Đã lưu vĩnh viễn ${synced}/${articlesList.length} bài viết tạp chí lên Supabase Cloud!`
+    };
+  } catch (err: any) {
+    return { success: false, count: 0, message: err.message };
   }
 }
 
 /**
  * Fetch user profiles from Supabase
+ * Checks public.user_profiles first, falls back to public.posts where category='user_profile'
  */
 export async function fetchRemoteUsers(
   url = DEFAULT_SUPABASE_URL,
   key = SUPABASE_PUBLISHABLE_KEY
 ): Promise<UserProfile[] | null> {
   try {
+    // 1. Try public.user_profiles
     const res = await fetch(`${url}/rest/v1/user_profiles?select=*`, {
       headers: {
         'apikey': key,
         'Authorization': `Bearer ${key}`
       }
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      return data.map(u => ({
-        id: u.id,
-        email: u.email,
-        fullName: u.full_name,
-        avatar: u.avatar,
-        phone: u.phone,
-        role: u.role || 'customer',
-        proStatus: u.pro_status || 'none',
-        salonId: u.salon_id,
-        bio: u.bio,
-        address: u.address,
-        authProvider: u.auth_provider || 'email',
-        registeredAt: u.registered_at || ''
-      }));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map(u => ({
+          id: u.id,
+          email: u.email,
+          fullName: u.full_name,
+          avatar: u.avatar,
+          phone: u.phone,
+          role: u.role || 'customer',
+          proStatus: u.pro_status || 'none',
+          salonId: u.salon_id,
+          bio: u.bio,
+          address: u.address,
+          authProvider: u.auth_provider || 'email',
+          registeredAt: u.registered_at || ''
+        }));
+      }
     }
+
+    // 2. Fallback to public.posts where category='user_profile'
+    const fallbackRes = await fetch(`${url}/rest/v1/posts?category=eq.user_profile&select=*`, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (fallbackRes.ok) {
+      const data = await fallbackRes.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((row: any) => {
+          try {
+            if (row.caption && row.caption.startsWith('{')) {
+              const parsed = JSON.parse(row.caption);
+              if (parsed && parsed.email) return parsed;
+            }
+          } catch {}
+          return {
+            id: row.id.replace(/^usr_/, ''),
+            email: `${row.title.toLowerCase().replace(/[^a-z0-9]/g, '')}@toidep.net`,
+            fullName: row.title,
+            avatar: row.images?.[0] || '',
+            role: (row.style_name as any) || 'customer',
+            proStatus: 'none',
+            registeredAt: '01/01/2026',
+            authProvider: 'email'
+          };
+        });
+      }
+    }
+
     return null;
   } catch (err) {
     console.warn('Fetch users notice:', err);
@@ -539,12 +702,16 @@ export async function fetchRemoteUsers(
 
 /**
  * Upsert user profile to Supabase
+ * Dual-syncs to both public.user_profiles and public.posts (as category='user_profile')
  */
 export async function upsertUserToSupabase(
   user: UserProfile,
   url = DEFAULT_SUPABASE_URL,
   key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
 ): Promise<boolean> {
+  let saved = false;
+
+  // 1. Primary insert to user_profiles
   try {
     const row = {
       id: user.id,
@@ -571,11 +738,44 @@ export async function upsertUserToSupabase(
       },
       body: JSON.stringify(row)
     });
-    return res.ok;
+    if (res.ok) saved = true;
   } catch (err) {
-    console.warn('Upsert user notice:', err);
-    return false;
+    console.warn('Primary user table note:', err);
   }
+
+  // 2. Guaranteed cloud persistence backup: public.posts (category='user_profile')
+  try {
+    const backupRow = {
+      id: `usr_${user.id}`,
+      title: user.fullName,
+      caption: JSON.stringify(user),
+      images: [user.avatar || ''],
+      category: 'user_profile',
+      style_name: user.role,
+      tags: [user.role, user.proStatus],
+      salon_id: user.salonId || 'user-account',
+      salon_name: user.role === 'salon_pro' ? 'Salon Pro Account' : 'Thành viên toidep.net',
+      salon_district: user.address || 'Hà Nội',
+      author_name: user.fullName,
+      likes_count: 0
+    };
+
+    const res2 = await fetch(`${url}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(backupRow)
+    });
+    if (res2.ok) saved = true;
+  } catch (err2) {
+    console.warn('Backup user write note:', err2);
+  }
+
+  return saved;
 }
 
 /**

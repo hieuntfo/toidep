@@ -3,7 +3,7 @@ import {
   CheckCircle, Star, MapPin, Phone, Clock, 
   Scissors, Tag, Calendar, Sparkles, ArrowRight, ShieldCheck, User 
 } from 'lucide-react';
-import { Salon, Post, Review } from '../../types';
+import { Salon, Post, Review, UserProfile } from '../../types';
 
 interface SalonProfileViewProps {
   salon: Salon;
@@ -12,6 +12,10 @@ interface SalonProfileViewProps {
   onSelectPost: (post: Post) => void;
   onBookNow: (post: Post, salon: Salon) => void;
   onBackToFeed: () => void;
+  isFollowing?: boolean;
+  onToggleFollow?: (salonId: string) => void;
+  currentUser?: UserProfile | null;
+  onRequireLogin?: (message: string) => void;
 }
 
 export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
@@ -20,9 +24,21 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   reviews,
   onSelectPost,
   onBookNow,
-  onBackToFeed
+  onBackToFeed,
+  isFollowing = false,
+  onToggleFollow,
+  currentUser,
+  onRequireLogin
 }) => {
   const [activeTab, setActiveTab] = useState<'lookbook' | 'prices' | 'stylists' | 'reviews'>('lookbook');
+
+  const handleFollowClick = () => {
+    if (!currentUser) {
+      if (onRequireLogin) onRequireLogin('Vui lòng đăng nhập để theo dõi salon này và nhận thông báo mẫu tóc mới.');
+      return;
+    }
+    if (onToggleFollow) onToggleFollow(salon.id);
+  };
 
   const salonPosts = posts.filter(p => p.salonId === salon.id);
   const salonReviews = reviews.filter(r => r.salonId === salon.id);
@@ -74,8 +90,19 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
               </div>
             </div>
 
-            {/* Quick Contact & Book Action */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            {/* Quick Contact, Follow & Book Action */}
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              <button
+                onClick={handleFollowClick}
+                className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  isFollowing
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-rose-50 text-[#E4576E] border border-rose-200 hover:bg-rose-100'
+                }`}
+              >
+                <span>{isFollowing ? '✓ Đang theo dõi' : '+ Theo dõi salon'}</span>
+              </button>
+
               <a
                 href={`tel:${salon.phone.replace(/\s+/g, '')}`}
                 className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center justify-center gap-1.5"

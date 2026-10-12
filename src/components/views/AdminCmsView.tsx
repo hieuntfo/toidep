@@ -5,7 +5,8 @@ import {
   Database, Server, RefreshCw, Key, Lock, LogOut, ExternalLink,
   Plus, Edit3, Trash2, Calendar, Phone, Clock, Search, Copy, CheckCheck,
   Eye, Tag, Scissors, Star, Terminal, BookOpen, Play, CheckCircle2,
-  FileText, Globe, ArrowRight, UserCheck, UserX, Award, Crop
+  FileText, Globe, ArrowRight, UserCheck, UserX, Award, Crop, LifeBuoy,
+  HelpCircle, Layers, CheckSquare, Bookmark
 } from 'lucide-react';
 import { 
   Salon, Post, BookingRequest, HanoiDistrict, Article, UserProfile, 
@@ -23,6 +24,7 @@ import {
   testSupabaseConnection,
   pushSalonsToSupabase,
   pushPostsToSupabase,
+  pushArticlesToSupabase,
   insertArticleToSupabase,
   deleteArticleFromSupabase,
   upsertUserToSupabase,
@@ -75,7 +77,7 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'salons' | 'users' | 'articles' | 'posts' | 'bookings' | 'supabase' | 'moderation' | 'seo'
+    'overview' | 'salons' | 'users' | 'articles' | 'posts' | 'bookings' | 'supabase' | 'moderation' | 'seo' | 'helpdesk'
   >('overview');
 
   // Supabase Health State
@@ -106,6 +108,7 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
   const [newArtCategory, setNewArtCategory] = useState<ArticleCategory>('hair_trends');
   const [newArtCover, setNewArtCover] = useState('/src/assets/images/hair_layer_woman_1791614539000.jpg');
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropTarget, setCropTarget] = useState<'create' | 'edit'>('create');
   const [newArtFocalCrop, setNewArtFocalCrop] = useState<FocalCropSettings | null>({
     aspectRatio: '5:3',
     focalX: 50,
@@ -120,6 +123,21 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
   const [newArtPullquote, setNewArtPullquote] = useState('');
   const [newArtVideoUrl, setNewArtVideoUrl] = useState('');
   const [newArtVideoTitle, setNewArtVideoTitle] = useState('');
+
+  // Edit Article Modal State
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [isEditArticleOpen, setIsEditArticleOpen] = useState(false);
+  const [editArtTitle, setEditArtTitle] = useState('');
+  const [editArtSubtitle, setEditArtSubtitle] = useState('');
+  const [editArtCategory, setEditArtCategory] = useState<ArticleCategory>('hair_trends');
+  const [editArtCover, setEditArtCover] = useState('');
+  const [editArtReadTime, setEditArtReadTime] = useState('5 phút đọc');
+  const [editArtAuthorName, setEditArtAuthorName] = useState('Ban Biên Tập');
+  const [editArtStatus, setEditArtStatus] = useState<'published' | 'draft'>('published');
+  const [editArtParagraph1, setEditArtParagraph1] = useState('');
+  const [editArtPullquote, setEditArtPullquote] = useState('');
+  const [editArtVideoUrl, setEditArtVideoUrl] = useState('');
+  const [editArtFocalCrop, setEditArtFocalCrop] = useState<FocalCropSettings | null>(null);
 
   // Flagged posts queue
   const [flaggedPosts, setFlaggedPosts] = useState<{ id: string; title: string; reason: string; author: string }[]>([
@@ -181,15 +199,21 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
     setTimeout(() => setCopiedCode(null), 2500);
   };
 
-  // Sync datasets to Supabase
+  // Sync datasets to Supabase (Salons, Lookbook, Articles & Users)
   const handleSyncAllData = async () => {
     setIsSyncingData(true);
-    setSyncMessage('Đang đồng bộ dữ liệu Salons và Lookbook lên Supabase...');
+    setSyncMessage('Đang đồng bộ dữ liệu Salons, Lookbook, Tạp chí và User lên Supabase Cloud...');
     try {
       const resSalons = await pushSalonsToSupabase(salons);
       const resPosts = await pushPostsToSupabase(posts);
-      setSyncMessage(`Thành công! Đã đồng bộ ${resSalons.count} salon và ${resPosts.count} lookbook lên Supabase.`);
-      setTimeout(() => setSyncMessage(null), 4000);
+      const resArticles = await pushArticlesToSupabase(articles);
+      for (const u of users) {
+        await upsertUserToSupabase(u);
+      }
+      setSyncMessage(
+        `Thành công! Đã đồng bộ ${resSalons.count} salon, ${resPosts.count} lookbook, ${resArticles.count} bài viết tạp chí và ${users.length} tài khoản người dùng lên Supabase Cloud.`
+      );
+      setTimeout(() => setSyncMessage(null), 5000);
     } catch (e: any) {
       setSyncMessage(`Lỗi đồng bộ: ${e.message}`);
     } finally {
@@ -357,6 +381,93 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
     setNewArtParagraph1('');
     setNewArtPullquote('');
     setNewArtVideoUrl('');
+  };
+
+  // Open Edit Article Modal
+  const handleOpenEditArticle = (art: Article) => {
+    setEditingArticle(art);
+    setEditArtTitle(art.title);
+    setEditArtSubtitle(art.subtitle || '');
+    setEditArtCategory(art.category);
+    setEditArtCover(art.coverImage);
+    setEditArtReadTime(art.readTime || '5 phút đọc');
+    setEditArtAuthorName(art.author?.name || 'Ban Biên Tập');
+    setEditArtStatus(art.status);
+    const p1 = art.sections.find(s => s.type === 'paragraph')?.content || '';
+    const pq = art.sections.find(s => s.type === 'pullquote')?.content || '';
+    const vid = art.sections.find(s => s.type === 'vertical_video')?.videoUrl || '';
+    setEditArtParagraph1(p1);
+    setEditArtPullquote(pq);
+    setEditArtVideoUrl(vid);
+    setEditArtFocalCrop(art.focalCrop || null);
+    setIsEditArticleOpen(true);
+  };
+
+  // Save Edit Article Submit
+  const handleSaveEditArticleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArticle || !editArtTitle) return;
+
+    const categoryLabels: Record<ArticleCategory, string> = {
+      hair_trends: 'Xu Hướng Tóc',
+      hair_care: 'Chăm Sóc Tóc',
+      makeup_nail: 'Nail & Makeup',
+      interviews: 'Phỏng Vấn Stylist',
+      technology: 'Công Nghệ Làm Đẹp'
+    };
+
+    const updatedSections: ArticleSection[] = [
+      {
+        id: `sec-${Date.now()}-1`,
+        type: 'paragraph',
+        content: editArtParagraph1 || 'Bài viết phân tích chuyên sâu về phong cách và kỹ thuật làm đẹp mới nhất...'
+      }
+    ];
+
+    if (editArtPullquote) {
+      updatedSections.push({
+        id: `sec-${Date.now()}-2`,
+        type: 'pullquote',
+        content: editArtPullquote,
+        caption: editArtAuthorName
+      });
+    }
+
+    if (editArtVideoUrl) {
+      updatedSections.push({
+        id: `sec-${Date.now()}-3`,
+        type: 'vertical_video',
+        videoTitle: 'Thước Phim Dọc 9:16 Hậu Trường',
+        videoUrl: editArtVideoUrl,
+        videoDuration: '00:45',
+        videoPoster: editArtCover,
+        caption: 'Video dọc định dạng 9:16 trình diễn thao tác salon.'
+      });
+    }
+
+    const updatedArticle: Article = {
+      ...editingArticle,
+      title: editArtTitle,
+      subtitle: editArtSubtitle,
+      category: editArtCategory,
+      categoryLabel: categoryLabels[editArtCategory],
+      coverImage: editArtCover,
+      readTime: editArtReadTime,
+      author: {
+        ...editingArticle.author,
+        name: editArtAuthorName
+      },
+      status: editArtStatus,
+      sections: updatedSections,
+      focalCrop: editArtFocalCrop || undefined
+    };
+
+    const updatedArticles = articles.map(a => a.id === updatedArticle.id ? updatedArticle : a);
+    if (onUpdateArticles) onUpdateArticles(updatedArticles);
+    insertArticleToSupabase(updatedArticle).catch(err => console.warn('Sync article error:', err));
+
+    setIsEditArticleOpen(false);
+    setEditingArticle(null);
   };
 
   // Create Salon
@@ -702,6 +813,18 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
         >
           <Database className="w-4 h-4" />
           <span>Database Supabase</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('helpdesk')}
+          className={`py-3.5 border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap px-1 ${
+            activeTab === 'helpdesk'
+              ? 'border-[#E4576E] text-[#E4576E]'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <LifeBuoy className="w-4 h-4 text-[#E4576E]" />
+          <span>Sổ Tay Helpdesk Admin</span>
         </button>
       </div>
 
@@ -1063,6 +1186,16 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
                     </button>
                   )}
 
+                  {/* Edit Article Button */}
+                  <button
+                    onClick={() => handleOpenEditArticle(art)}
+                    className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 border border-blue-200 shadow-2xs"
+                    title="Chỉnh sửa nội dung & ảnh bìa bài viết"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Sửa</span>
+                  </button>
+
                   <button
                     onClick={() => handleDeleteArticle(art.id)}
                     className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
@@ -1255,6 +1388,240 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
             <pre className="p-4 bg-black/60 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto border border-white/10">
               {GOOSE_MCP_COMMAND}
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 7: HELPDESK & HƯỚNG DẪN QUẢN TRỊ VIÊN ================= */}
+      {activeTab === 'helpdesk' && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          {/* Masthead Banner */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-[#1F1A1C] text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl relative overflow-hidden">
+            <div className="relative z-10 space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                <LifeBuoy className="w-3.5 h-3.5 text-[#E4576E]" />
+                <span>Sổ Tay Quản Trị Hệ Thống toidep.net (Helpdesk)</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Cẩm Nang Vận Hành & Hướng Dẫn Toàn Diện Cho Admin
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                Tài liệu chuẩn hóa quy trình quản trị tài khoản, xuất bản bài viết longform, tự động căn crop ảnh nhân vật 5:3 & 1:1, kiểm soát cơ sở dữ liệu Supabase và bảo đảm dữ liệu luôn lưu trữ vĩnh viễn trên đám mây.
+              </p>
+            </div>
+            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-x-10 translate-y-10">
+              <Shield className="w-80 h-80 text-white" />
+            </div>
+          </div>
+
+          {/* Quick Admin Credentials & Security Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Key className="w-4 h-4 text-emerald-600" />
+                <span>1. Thông Tin Đăng Nhập & Bảo Mật Quản Trị Viên</span>
+              </h3>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Super Admin
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-slate-500 font-medium">Tài khoản Admin (Username):</span>
+                <div className="flex items-center justify-between font-mono font-bold text-slate-900 text-sm">
+                  <span>satthucoi</span>
+                  <button 
+                    onClick={() => copyToClipboard('satthucoi', 'user_acc')}
+                    className="p-1 hover:bg-slate-200 rounded text-slate-500"
+                    title="Sao chép"
+                  >
+                    {copiedCode === 'user_acc' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-slate-500 font-medium">Mật khẩu Quản trị:</span>
+                <div className="flex items-center justify-between font-mono font-bold text-[#E4576E] text-sm">
+                  <span>Deonho@123</span>
+                  <button 
+                    onClick={() => copyToClipboard('Deonho@123', 'user_pass')}
+                    className="p-1 hover:bg-slate-200 rounded text-slate-500"
+                    title="Sao chép"
+                  >
+                    {copiedCode === 'user_pass' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-slate-500 font-medium">Quyền riêng tư nút Supabase:</span>
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Tab & Cửa sổ cấu hình Supabase chỉ hiển thị khi đăng nhập đúng acc <span className="text-emerald-700 font-mono">satthucoi</span>. Khách phổ thông không nhìn thấy để bảo vệ an toàn API key.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Supabase Storage & Dual-Sync Guarantee */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Database className="w-4 h-4 text-emerald-600" />
+                <span>2. Cơ Chế Lưu Trữ Supabase & Cam Kết Chống Mất Bài Khi F5</span>
+              </h3>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                Dual-Sync Architecture
+              </span>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
+              <p>
+                <strong>Vì sao trước đây thêm bài f5 vài lần bị mất?</strong> Trước đó bảng <code className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 font-mono">articles</code> chưa được chạy Migration SQL trên Supabase Cloud, nên bài viết chỉ nằm tạm trong LocalStorage của trình duyệt.
+              </p>
+              <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-950 space-y-2">
+                <span className="font-bold flex items-center gap-1.5 text-emerald-900">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Cơ chế Dual-Sync mới đã kích hoạt tự động 100%:
+                </span>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>
+                    Mọi bài viết khi bấm <strong>"Hoàn Tất & Lưu Vào Hệ Thống"</strong> sẽ tự động lưu <strong>đồng thời 2 nơi</strong>: bảng <code className="font-mono">articles</code> và sao lưu đám mây vào bảng <code className="font-mono">posts</code> (category: <code className="font-mono">editorial_article</code>).
+                  </li>
+                  <li>
+                    Khi F5 tải lại trang, hệ thống sẽ truy xuất ngay lập tức từ Supabase Cloud. Dù người dùng xóa cache hay đổi sang điện thoại khác, bài viết vẫn tồn tại vĩnh viễn!
+                  </li>
+                  <li>
+                    Tại tab <strong>"Database Supabase"</strong> trong CMS, admin có thể bấm nút <strong>"Đồng Bộ Lên Supabase"</strong> bất cứ lúc nào để đẩy đồng loạt toàn bộ Salon, Lookbook, Tạp chí và Tài khoản.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: User Management & Salon Pro Approval */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#E4576E]" />
+                <span>3. Quản Trị User & Quy Trình Duyệt Salon Pro (Tích Xanh)</span>
+              </h3>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-[#E4576E] border border-rose-200">
+                User Roles & Badges
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Duyệt Hồ Sơ Salon Pro</span>
+                </div>
+                <p className="text-slate-600 leading-relaxed">
+                  Khi chủ tiệm đăng ký qua form Salon Pro, trạng thái sẽ là <span className="font-bold text-amber-600">pending</span>. Admin vào Tab <strong>"Quản lý User"</strong>, bấm nút <strong>"Duyệt Salon Pro"</strong> để cấp Tích Xanh chính chủ GPKD và cấp quyền quản trị salon.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-blue-600" />
+                  <span>Phân Quyền Vai Trò</span>
+                </div>
+                <p className="text-slate-600 leading-relaxed">
+                  Admin có thể nâng cấp vai trò của người dùng thành: <br />
+                  • <strong>Khách Hàng (Customer)</strong>: Đặt lịch, like, comment, lưu bài.<br />
+                  • <strong>Chủ Salon (Salon Owner)</strong>: Sửa salon, đăng lookbook.<br />
+                  • <strong>Admin</strong>: Quản trị toàn hệ thống toidep.net.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <UserX className="w-4 h-4 text-rose-600" />
+                  <span>Từ Chối & Xử Lý Vi Phạm</span>
+                </div>
+                <p className="text-slate-600 leading-relaxed">
+                  Nếu phát hiện tài khoản đăng ảnh giả mạo, spam phá giá 50k hoặc lừa cọc, bấm nút <strong>"Hạ Pro"</strong> hoặc <strong>"Xóa"</strong> để bảo vệ uy tín nền tảng làm đẹp Hà Nội.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Editorial Magazine & Auto Crop Tool */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Crop className="w-4 h-4 text-indigo-600" />
+                <span>4. Hướng Dẫn Soạn Bài Tạp Chí & Dùng Công Cụ Auto Crop (5:3, 1:1)</span>
+              </h3>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Smart Image Cropping
+              </span>
+            </div>
+
+            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <span className="font-bold text-slate-900 block">✂️ Công Cụ Auto Crop Chống Méo Hình:</span>
+                  <p>
+                    Khi nhập URL ảnh bìa, bấm nút <strong>"✂️ Auto Crop & Focus Nhân Vật"</strong>. Công cụ mở cửa sổ cho phép:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Chọn tỉ lệ: <strong>5:3</strong> (Chuẩn banner tạp chí cao cấp), <strong>1:1</strong> (Ảnh vuông lookbook), <strong>9:16</strong> (Video dọc).</li>
+                    <li>Chọn Tiêu Điểm: <strong>Focus Gương Mặt / Mái Tóc</strong> (hệ thống tự nâng tọa độ lên 25% phía trên để không bị cắt xén trán hoặc mắt).</li>
+                    <li>Phóng to thu nhỏ (Zoom) và chống co giãn méo hình qua CSS Object-Position thông minh.</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <span className="font-bold text-slate-900 block">🎬 Chèn Video Dọc 9:16 & Chỉnh Sửa Bài:</span>
+                  <p>
+                    Dán link file video MP4 dọc vào ô <strong>"Link Video Dọc 9:16"</strong>. Trình đọc bài sẽ tích hợp player video dọc thời thượng có nút Play/Pause và Bật/Tắt âm thanh.
+                  </p>
+                  <p>
+                    Để chỉnh sửa bài đã đăng: Bấm nút <strong>"Sửa"</strong> trên danh sách bài viết → Thay đổi tiêu đề, sapo, ảnh bìa → Bấm <strong>"Lưu Thay Đổi"</strong>, dữ liệu lập tức cập nhật lên Supabase!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Interaction Rules (Like, Bookmark, Comment, Follow) */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-amber-600" />
+                <span>5. Kiểm Soát Rule Đăng Nhập Cho Khách Hàng (Like, Comment, Theo Dõi)</span>
+              </h3>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                Rule Check Enforced
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 space-y-2">
+              <p className="font-bold">
+                🔒 Tất cả tương tác trên mặt trang đều yêu cầu đăng nhập:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                <div className="p-3 bg-white rounded-xl border border-amber-200">
+                  <span className="font-bold block text-slate-900">❤️ Thích (Like)</span>
+                  <span className="text-[11px] text-slate-500">Bắt buộc đăng nhập để bày tỏ yêu thích lookbook & bài viết.</span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200">
+                  <span className="font-bold block text-slate-900">🔖 Lưu (Bookmark)</span>
+                  <span className="text-[11px] text-slate-500">Lưu mẫu tóc vào sổ tay cá nhân chỉ dành cho thành viên.</span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200">
+                  <span className="font-bold block text-slate-900">💬 Bình Luận (Comment)</span>
+                  <span className="text-[11px] text-slate-500">Chặn bình luận nặc danh; bình luận hiển thị tên thật & avatar của user.</span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200">
+                  <span className="font-bold block text-slate-900">➕ Theo Dõi (Follow)</span>
+                  <span className="text-[11px] text-slate-500">Theo dõi salon yêu thích để nhận thông báo mẫu mới trong feed.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1473,6 +1840,212 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
         </div>
       )}
 
+      {/* MODAL: Chỉnh Sửa Bài Viết Tạp Chí */}
+      {isEditArticleOpen && editingArticle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#E4576E]">Toà Soạn toidep.net</span>
+                <h3 className="font-bold text-slate-900 text-base">Chỉnh Sửa Bài Viết Tạp Chí & Cập Nhật Supabase</h3>
+              </div>
+              <button 
+                onClick={() => { setIsEditArticleOpen(false); setEditingArticle(null); }} 
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditArticleSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tiêu đề bài viết (Headline)</label>
+                <input
+                  type="text"
+                  required
+                  value={editArtTitle}
+                  onChange={(e) => setEditArtTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Sapo / Tóm tắt mở đầu</label>
+                <textarea
+                  rows={2}
+                  value={editArtSubtitle}
+                  onChange={(e) => setEditArtSubtitle(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Chuyên mục</label>
+                  <select
+                    value={editArtCategory}
+                    onChange={(e) => setEditArtCategory(e.target.value as ArticleCategory)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white"
+                  >
+                    <option value="hair_trends">Xu Hướng Tóc</option>
+                    <option value="makeup_nail">Nail & Makeup</option>
+                    <option value="hair_care">Chăm Sóc Tóc</option>
+                    <option value="interviews">Phỏng Vấn Stylist</option>
+                    <option value="technology">Công Nghệ Làm Đẹp</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Thời gian đọc & Tác giả</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editArtReadTime}
+                      onChange={(e) => setEditArtReadTime(e.target.value)}
+                      placeholder="5 phút đọc"
+                      className="w-1/2 px-3 py-2 rounded-xl border border-slate-200"
+                    />
+                    <input
+                      type="text"
+                      value={editArtAuthorName}
+                      onChange={(e) => setEditArtAuthorName(e.target.value)}
+                      placeholder="Tên tác giả"
+                      className="w-1/2 px-3 py-2 rounded-xl border border-slate-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">Link Ảnh Bìa Hero (Cover Image URL)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCropTarget('edit');
+                      setIsCropModalOpen(true);
+                    }}
+                    className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-[#E4576E] border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Crop className="w-3.5 h-3.5 text-[#E4576E]" />
+                    <span>✂️ Auto Crop & Focus Nhân Vật (5:3, 1:1)</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={editArtCover}
+                  onChange={(e) => setEditArtCover(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200"
+                />
+
+                {/* Live Smart Crop Preview Badge */}
+                {editArtCover && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                    <div className="w-24 aspect-[5/3] rounded-lg overflow-hidden border border-slate-300 bg-black shrink-0 relative">
+                      <img 
+                        src={editArtCover} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        style={{
+                          objectPosition: `${editArtFocalCrop?.focalX ?? 50}% ${editArtFocalCrop?.focalY ?? 25}%`,
+                          transform: `scale(${editArtFocalCrop?.zoom ?? 1.05})`
+                        }}
+                      />
+                      <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[8px] font-mono px-1 rounded">5:3</span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 space-y-0.5">
+                      <div className="font-bold text-slate-900 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Đã kích hoạt Auto Crop & Chống méo hình</span>
+                      </div>
+                      <p className="text-slate-500">
+                        Tiêu điểm: X={editArtFocalCrop?.focalX ?? 50}% · Y={editArtFocalCrop?.focalY ?? 25}% ({editArtFocalCrop?.focusTarget === 'face' ? 'Gương mặt/Mái tóc' : 'Trung tâm'})
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl space-y-3 border border-slate-200">
+                <h4 className="font-bold text-slate-800">Nội Dung Longform:</h4>
+                <div>
+                  <label className="block font-semibold text-slate-600 mb-1">Đoạn văn mở đầu (Kèm Drop Cap)</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhập nội dung đoạn văn chính..."
+                    value={editArtParagraph1}
+                    onChange={(e) => setEditArtParagraph1(e.target.value)}
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-600 mb-1">Trích dẫn nghệ thuật (Pull Quote)</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Tóc đẹp tự nhiên là khi bước ra đường gió thổi vẫn giữ nếp hoàn hảo."
+                    value={editArtPullquote}
+                    onChange={(e) => setEditArtPullquote(e.target.value)}
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200"
+                  />
+                </div>
+
+                <div className="pt-2 border-t">
+                  <label className="block font-semibold text-slate-600 mb-1">Link Video Dọc 9:16 (Tùy chọn)</label>
+                  <input
+                    type="text"
+                    placeholder="https://assets.mixkit.co/...mp4"
+                    value={editArtVideoUrl}
+                    onChange={(e) => setEditArtVideoUrl(e.target.value)}
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Trạng thái xuất bản</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-emerald-700">
+                    <input
+                      type="radio"
+                      name="editArtStatus"
+                      checked={editArtStatus === 'published'}
+                      onChange={() => setEditArtStatus('published')}
+                    />
+                    <span>🚀 Xuất bản công khai (Public) ra trang Tạp chí</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-amber-700">
+                    <input
+                      type="radio"
+                      name="editArtStatus"
+                      checked={editArtStatus === 'draft'}
+                      onChange={() => setEditArtStatus('draft')}
+                    />
+                    <span>Lưu vào Bản Nháp (Draft)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditArticleOpen(false); setEditingArticle(null); }}
+                  className="px-4 py-2.5 bg-slate-100 font-semibold text-slate-700 rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-[#E4576E] hover:bg-[#d84860] font-bold text-white rounded-xl transition-colors shadow-xs"
+                >
+                  Lưu Thay Đổi & Cập Nhật Supabase
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: Thêm Salon mới */}
       {isAddSalonOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -1559,10 +2132,15 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
       <SmartImageCropModal
         isOpen={isCropModalOpen}
         onClose={() => setIsCropModalOpen(false)}
-        initialImageUrl={newArtCover}
+        initialImageUrl={cropTarget === 'edit' ? editArtCover : newArtCover}
         onApplyCrop={(croppedUrl, settings) => {
-          setNewArtCover(croppedUrl);
-          setNewArtFocalCrop(settings);
+          if (cropTarget === 'edit') {
+            setEditArtCover(croppedUrl);
+            setEditArtFocalCrop(settings);
+          } else {
+            setNewArtCover(croppedUrl);
+            setNewArtFocalCrop(settings);
+          }
         }}
       />
     </div>

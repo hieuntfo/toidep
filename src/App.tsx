@@ -105,11 +105,17 @@ export default function App() {
     return saved ? JSON.parse(saved) : ['post-1'];
   });
 
+  const [followedSalonIds, setFollowedSalonIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('toidep_followed_ids');
+    return saved ? JSON.parse(saved) : ['salon-1', 'salon-2'];
+  });
+
   // Modal States
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [bookingPost, setBookingPost] = useState<{ post: Post; salon: Salon } | null>(null);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authNotice, setAuthNotice] = useState<string>('');
   const [salonEditModalOpen, setSalonEditModalOpen] = useState(false);
   const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
 
@@ -215,16 +221,44 @@ export default function App() {
     localStorage.setItem('toidep_liked_ids', JSON.stringify(likedPostIds));
   }, [likedPostIds]);
 
-  // Social interactions
+  useEffect(() => {
+    localStorage.setItem('toidep_followed_ids', JSON.stringify(followedSalonIds));
+  }, [followedSalonIds]);
+
+  // Auth helper
+  const handleRequireLogin = (msg: string) => {
+    setAuthNotice(msg);
+    setAuthModalOpen(true);
+  };
+
+  // Social interactions (Login rule check enforced)
   const handleToggleLike = (postId: string) => {
+    if (!currentUser) {
+      handleRequireLogin('Vui lòng đăng nhập tài khoản để thích bài viết và tương tác với tác phẩm.');
+      return;
+    }
     setLikedPostIds(prev => 
       prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
     );
   };
 
   const handleToggleSave = (postId: string) => {
+    if (!currentUser) {
+      handleRequireLogin('Vui lòng đăng nhập tài khoản để lưu tác phẩm lookbook vào sổ tay làm đẹp.');
+      return;
+    }
     setSavedPostIds(prev => 
       prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
+    );
+  };
+
+  const handleToggleFollowSalon = (salonId: string) => {
+    if (!currentUser) {
+      handleRequireLogin('Vui lòng đăng nhập tài khoản để theo dõi salon này và nhận thông báo mẫu mới.');
+      return;
+    }
+    setFollowedSalonIds(prev => 
+      prev.includes(salonId) ? prev.filter(id => id !== salonId) : [...prev, salonId]
     );
   };
 
@@ -294,6 +328,31 @@ export default function App() {
   // User connected salon if salon_pro
   const userSalon = salons.find(s => s.id === currentUser?.salonId) || salons[0];
 
+  // Check admin session (username satthucoi or admin role)
+  const isAdmin = Boolean(
+    currentUser?.role === 'admin' || 
+    currentUser?.email === 'admin@toidep.net' ||
+    (typeof window !== 'undefined' && localStorage.getItem('toidep_admin_auth') === 'true')
+  );
+
+  const handleLoginUser = (user: UserProfile) => {
+    setCurrentUser(user);
+    localStorage.setItem('toidep_current_user', JSON.stringify(user));
+    if (user.role === 'admin' || user.email === 'admin@toidep.net') {
+      localStorage.setItem('toidep_admin_auth', 'true');
+    }
+    setAuthNotice('');
+    if (user.role === 'salon_pro') {
+      setActiveView('business');
+    }
+  };
+
+  const handleLogoutUser = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('toidep_current_user');
+    localStorage.removeItem('toidep_admin_auth');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBFC] text-[#1E1E24]">
       {/* Header */}
@@ -304,8 +363,12 @@ export default function App() {
         onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
         savedCount={savedPostIds.length}
         currentUser={currentUser}
-        onOpenAuthModal={() => setAuthModalOpen(true)}
-        onLogoutUser={() => setCurrentUser(null)}
+        onOpenAuthModal={() => {
+          setAuthNotice('');
+          setAuthModalOpen(true);
+        }}
+        onLogoutUser={handleLogoutUser}
+        isAdmin={isAdmin}
       />
 
       {/* Main View Router */}
@@ -352,6 +415,8 @@ export default function App() {
             posts={posts}
             onSelectSalon={handleViewSalon}
             onBookNow={handleBookNow}
+            currentUser={currentUser}
+            onRequireLogin={handleRequireLogin}
           />
         )}
 
@@ -366,6 +431,8 @@ export default function App() {
             likedPostIds={likedPostIds}
             savedPostIds={savedPostIds}
             onViewSalon={handleViewSalon}
+            currentUser={currentUser}
+            onRequireLogin={handleRequireLogin}
           />
         )}
 
@@ -377,6 +444,10 @@ export default function App() {
             onSelectPost={(post) => setSelectedPost(post)}
             onBookNow={handleBookNow}
             onBackToFeed={() => setActiveView('explore')}
+            isFollowing={followedSalonIds.includes(activeSalon.id)}
+            onToggleFollow={handleToggleFollowSalon}
+            currentUser={currentUser}
+            onRequireLogin={handleRequireLogin}
           />
         )}
 
@@ -397,7 +468,10 @@ export default function App() {
             onSelectPost={(post) => setSelectedPost(post)}
             onViewSalon={handleViewSalon}
             currentUser={currentUser}
-            onOpenAuthModal={() => setAuthModalOpen(true)}
+            onOpenAuthModal={() => {
+              setAuthNotice('');
+              setAuthModalOpen(true);
+            }}
           />
         )}
 
@@ -454,6 +528,7 @@ export default function App() {
         activeConcept={activeConcept}
         onOpenSupabaseConfig={() => setSupabaseModalOpen(true)}
         onNavigate={(view) => setActiveView(view)}
+        isAdmin={isAdmin}
       />
 
       {/* Post Detail Modal (/p/{id}) */}
@@ -470,6 +545,8 @@ export default function App() {
           isLiked={likedPostIds.includes(selectedPost.id)}
           isSaved={savedPostIds.includes(selectedPost.id)}
           onViewSalon={handleViewSalon}
+          currentUser={currentUser}
+          onRequireLogin={handleRequireLogin}
         />
       )}
 
@@ -494,16 +571,14 @@ export default function App() {
       {/* User Login / Register / Forgot Password Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        currentUser={currentUser}
-        onLogin={(user) => {
-          setCurrentUser(user);
-          // If user role is salon_pro, open salon dashboard
-          if (user.role === 'salon_pro') {
-            setActiveView('business');
-          }
+        onClose={() => {
+          setAuthModalOpen(false);
+          setAuthNotice('');
         }}
-        onLogout={() => setCurrentUser(null)}
+        currentUser={currentUser}
+        onLogin={handleLoginUser}
+        onLogout={handleLogoutUser}
+        authNotice={authNotice}
       />
 
       {/* Salon Owner Edit Modal (Salon Pro) */}

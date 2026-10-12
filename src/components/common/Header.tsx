@@ -16,6 +16,7 @@ interface HeaderProps {
   currentUser?: UserProfile | null;
   onOpenAuthModal?: () => void;
   onLogoutUser?: () => void;
+  isAdmin?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,9 +26,17 @@ export const Header: React.FC<HeaderProps> = ({
   savedCount,
   currentUser,
   onOpenAuthModal,
-  onLogoutUser
+  onLogoutUser,
+  isAdmin: propIsAdmin
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isAdmin = Boolean(
+    propIsAdmin || 
+    currentUser?.role === 'admin' || 
+    currentUser?.email === 'admin@toidep.net' ||
+    (typeof window !== 'undefined' && localStorage.getItem('toidep_admin_auth') === 'true')
+  );
 
   const handleNav = (view: string) => {
     onNavigate(view);
@@ -137,19 +146,21 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Zone 3: Actions & Auth Button */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            {/* Supabase status/config quick link */}
-            <button
-              onClick={onOpenSupabaseConfig}
-              className="hidden md:inline-flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-emerald-50/80 border border-emerald-200/90 hover:bg-emerald-100 rounded-xl transition-colors shadow-2xs"
-              title="Kết nối cơ sở dữ liệu Supabase iglrrhlfvazivudrfued (Online)"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <Database className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-emerald-800 font-bold font-mono text-[11px] hidden xl:inline">Supabase DB</span>
-            </button>
+            {/* Supabase status/config quick link (Only visible for admin satthucoi) */}
+            {isAdmin && (
+              <button
+                onClick={onOpenSupabaseConfig}
+                className="hidden md:inline-flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-emerald-50/80 border border-emerald-200/90 hover:bg-emerald-100 rounded-xl transition-colors shadow-2xs"
+                title="Quản trị Database Supabase iglrrhlfvazivudrfued (Admin satthucoi)"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Database className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-800 font-bold font-mono text-[11px] hidden xl:inline">Supabase DB</span>
+              </button>
+            )}
 
             {/* Primary CTA: Đăng bài */}
             <button
@@ -285,12 +296,14 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              <button
-                onClick={() => { onOpenSupabaseConfig(); setMobileMenuOpen(false); }}
-                className="text-emerald-700 font-semibold flex items-center gap-1.5 py-1.5"
-              >
-                <Database className="w-4 h-4 text-emerald-600" /> Supabase Database
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => { onOpenSupabaseConfig(); setMobileMenuOpen(false); }}
+                  className="text-emerald-700 font-semibold flex items-center gap-1.5 py-1.5"
+                >
+                  <Database className="w-4 h-4 text-emerald-600" /> Supabase Database (Admin)
+                </button>
+              )}
             </div>
           </div>
         )}

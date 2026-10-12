@@ -13,6 +13,7 @@ interface AuthModalProps {
   onLogin: (user: UserProfile) => void;
   onLogout: () => void;
   initialMode?: 'login' | 'register' | 'forgot';
+  authNotice?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -21,7 +22,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   currentUser,
   onLogin,
   onLogout,
-  initialMode = 'login'
+  initialMode = 'login',
+  authNotice
 }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
@@ -242,6 +244,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Content Body */}
         <div className="p-6 space-y-5">
+          {authNotice && (
+            <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold block">Yêu cầu đăng nhập:</span>
+                <span>{authNotice}</span>
+              </div>
+            </div>
+          )}
+
           {/* Messages */}
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">

@@ -3,7 +3,7 @@ import {
   X, Heart, Bookmark, Share2, MapPin, Scissors, Tag, 
   CheckCircle, MessageCircle, Send, ArrowRight, Sparkles, Clock, Calendar, Check
 } from 'lucide-react';
-import { Post, Salon, Stylist } from '../../types';
+import { Post, Salon, Stylist, UserProfile } from '../../types';
 
 interface PostDetailModalProps {
   post: Post | null;
@@ -17,6 +17,8 @@ interface PostDetailModalProps {
   isLiked: boolean;
   isSaved: boolean;
   onViewSalon: (salonId: string) => void;
+  currentUser?: UserProfile | null;
+  onRequireLogin?: (message: string) => void;
 }
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({
@@ -30,7 +32,9 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
   onToggleSave,
   isLiked,
   isSaved,
-  onViewSalon
+  onViewSalon,
+  currentUser,
+  onRequireLogin
 }) => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<{ id: string; user: string; text: string; time: string }[]>([
@@ -44,11 +48,19 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+
+    if (!currentUser) {
+      if (onRequireLogin) {
+        onRequireLogin('Vui lòng đăng nhập tài khoản để gửi bình luận hoặc hỏi tư vấn giá cho mẫu này.');
+      }
+      return;
+    }
+
     setComments([
       ...comments,
       {
         id: String(Date.now()),
-        user: 'Bạn (Khách hàng)',
+        user: currentUser.fullName || 'Bạn',
         text: commentText.trim(),
         time: 'Vừa xong'
       }

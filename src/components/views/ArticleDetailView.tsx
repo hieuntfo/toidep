@@ -4,7 +4,7 @@ import {
   Sparkles, Play, Pause, Volume2, VolumeX, Scissors, MapPin, 
   CheckCircle2, ChevronRight, MessageSquare, Quote
 } from 'lucide-react';
-import { Article, Salon, Post } from '../../types';
+import { Article, Salon, Post, UserProfile } from '../../types';
 
 interface ArticleDetailViewProps {
   article: Article;
@@ -13,6 +13,8 @@ interface ArticleDetailViewProps {
   onSelectSalon?: (salonId: string) => void;
   onBookNow?: (post: Post, salon: Salon) => void;
   posts: Post[];
+  currentUser?: UserProfile | null;
+  onRequireLogin?: (message: string) => void;
 }
 
 export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
@@ -21,7 +23,9 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
   salons,
   onSelectSalon,
   onBookNow,
-  posts
+  posts,
+  currentUser,
+  onRequireLogin
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(article.likesCount);
@@ -51,6 +55,10 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
   };
 
   const handleToggleLike = () => {
+    if (!currentUser) {
+      if (onRequireLogin) onRequireLogin('Vui lòng đăng nhập để thích bài viết và tương tác với bài viết.');
+      return;
+    }
     if (isLiked) {
       setLikesCount(prev => prev - 1);
       setIsLiked(false);
@@ -58,6 +66,14 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
       setLikesCount(prev => prev + 1);
       setIsLiked(true);
     }
+  };
+
+  const handleToggleSave = () => {
+    if (!currentUser) {
+      if (onRequireLogin) onRequireLogin('Vui lòng đăng nhập để lưu bài viết chuyên đề vào sổ tay làm đẹp.');
+      return;
+    }
+    setIsSaved(prev => !prev);
   };
 
   const handleShare = async () => {
@@ -116,7 +132,7 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
             </button>
 
             <button
-              onClick={() => setIsSaved(!isSaved)}
+              onClick={handleToggleSave}
               className={`p-2 rounded-full border transition-all ${
                 isSaved 
                   ? 'bg-slate-900 text-white border-slate-900' 

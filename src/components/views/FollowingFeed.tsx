@@ -3,7 +3,7 @@ import {
   Heart, Bookmark, MessageCircle, Share2, MapPin, 
   Scissors, Tag, CheckCircle, ArrowRight, UserPlus, Sparkles 
 } from 'lucide-react';
-import { Post, Salon, Stylist } from '../../types';
+import { Post, Salon, Stylist, UserProfile } from '../../types';
 
 interface FollowingFeedProps {
   posts: Post[];
@@ -15,6 +15,8 @@ interface FollowingFeedProps {
   likedPostIds: string[];
   savedPostIds: string[];
   onViewSalon: (salonId: string) => void;
+  currentUser?: UserProfile | null;
+  onRequireLogin?: (message: string) => void;
 }
 
 export const FollowingFeed: React.FC<FollowingFeedProps> = ({
@@ -26,7 +28,9 @@ export const FollowingFeed: React.FC<FollowingFeedProps> = ({
   onToggleSave,
   likedPostIds,
   savedPostIds,
-  onViewSalon
+  onViewSalon,
+  currentUser,
+  onRequireLogin
 }) => {
   const [followedSalonIds, setFollowedSalonIds] = useState<string[]>(['salon-1', 'salon-2']);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
@@ -56,6 +60,10 @@ export const FollowingFeed: React.FC<FollowingFeedProps> = ({
   };
 
   const toggleFollow = (id: string) => {
+    if (!currentUser) {
+      if (onRequireLogin) onRequireLogin('Vui lòng đăng nhập để theo dõi salon và cập nhật mẫu mới.');
+      return;
+    }
     setFollowedSalonIds(prev => 
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );

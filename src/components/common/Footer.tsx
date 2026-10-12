@@ -7,11 +7,13 @@ interface FooterProps {
   activeConcept?: string;
   onOpenSupabaseConfig: () => void;
   onNavigate: (view: string) => void;
+  isAdmin?: boolean;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenSupabaseConfig,
-  onNavigate
+  onNavigate,
+  isAdmin
 }) => {
   return (
     <footer className="bg-white border-t border-slate-200 mt-16 text-slate-600 text-xs">
@@ -102,17 +104,19 @@ export const Footer: React.FC<FooterProps> = ({
                   Admin
                 </span>
               </button>
-              <button
-                onClick={onOpenSupabaseConfig}
-                className="w-full flex items-center justify-between text-left text-xs font-semibold text-slate-800 hover:text-emerald-700 transition-colors pt-1 border-t border-slate-200"
-              >
-                <span className="flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-emerald-600" /> Dữ Liệu Supabase
-                </span>
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-                  PostgreSQL
-                </span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={onOpenSupabaseConfig}
+                  className="w-full flex items-center justify-between text-left text-xs font-semibold text-slate-800 hover:text-emerald-700 transition-colors pt-1 border-t border-slate-200"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5 text-emerald-600" /> Dữ Liệu Supabase (Admin)
+                  </span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">
+                    PostgreSQL
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
