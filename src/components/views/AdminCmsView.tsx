@@ -5,12 +5,13 @@ import {
   Database, Server, RefreshCw, Key, Lock, LogOut, ExternalLink,
   Plus, Edit3, Trash2, Calendar, Phone, Clock, Search, Copy, CheckCheck,
   Eye, Tag, Scissors, Star, Terminal, BookOpen, Play, CheckCircle2,
-  FileText, Globe, ArrowRight, UserCheck, UserX, Award
+  FileText, Globe, ArrowRight, UserCheck, UserX, Award, Crop
 } from 'lucide-react';
 import { 
   Salon, Post, BookingRequest, HanoiDistrict, Article, UserProfile, 
-  UserRole, ProVerificationStatus, ArticleCategory, ArticleSection 
+  UserRole, ProVerificationStatus, ArticleCategory, ArticleSection, FocalCropSettings 
 } from '../../types';
+import { SmartImageCropModal } from '../common/SmartImageCropModal';
 import { 
   SUPABASE_PROJECT_REF, 
   DEFAULT_SUPABASE_URL, 
@@ -104,6 +105,14 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
   const [newArtSubtitle, setNewArtSubtitle] = useState('');
   const [newArtCategory, setNewArtCategory] = useState<ArticleCategory>('hair_trends');
   const [newArtCover, setNewArtCover] = useState('/src/assets/images/hair_layer_woman_1791614539000.jpg');
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [newArtFocalCrop, setNewArtFocalCrop] = useState<FocalCropSettings | null>({
+    aspectRatio: '5:3',
+    focalX: 50,
+    focalY: 25,
+    zoom: 1.05,
+    focusTarget: 'face'
+  });
   const [newArtReadTime, setNewArtReadTime] = useState('5 phút đọc');
   const [newArtAuthorName, setNewArtAuthorName] = useState('Ban Biên Tập');
   const [newArtStatus, setNewArtStatus] = useState<'published' | 'draft'>('published');
@@ -334,7 +343,8 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
       viewsCount: 1,
       likesCount: 0,
       sections: newSections,
-      tags: ['Làm Đẹp Hà Nội', categoryLabels[newArtCategory]]
+      tags: ['Làm Đẹp Hà Nội', categoryLabels[newArtCategory]],
+      focalCrop: newArtFocalCrop || undefined
     };
 
     const updated = [newArticle, ...articles];
@@ -1324,14 +1334,51 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Link Ảnh Bìa Hero (Cover Image URL)</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">Link Ảnh Bìa Hero (Cover Image URL)</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCropModalOpen(true)}
+                    className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-[#E4576E] border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Crop className="w-3.5 h-3.5 text-[#E4576E]" />
+                    <span>✂️ Auto Crop & Focus Nhân Vật (5:3, 1:1)</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={newArtCover}
                   onChange={(e) => setNewArtCover(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200"
                 />
+
+                {/* Live Smart Crop Preview Badge */}
+                {newArtCover && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                    <div className="w-24 aspect-[5/3] rounded-lg overflow-hidden border border-slate-300 bg-black shrink-0 relative">
+                      <img 
+                        src={newArtCover} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        style={{
+                          objectPosition: `${newArtFocalCrop?.focalX ?? 50}% ${newArtFocalCrop?.focalY ?? 25}%`,
+                          transform: `scale(${newArtFocalCrop?.zoom ?? 1.05})`
+                        }}
+                      />
+                      <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[8px] font-mono px-1 rounded">5:3</span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 space-y-0.5">
+                      <div className="font-bold text-slate-900 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Đã kích hoạt Auto Crop & Chống méo hình</span>
+                      </div>
+                      <p className="text-slate-500">
+                        Tiêu điểm nét: X={newArtFocalCrop?.focalX ?? 50}% · Y={newArtFocalCrop?.focalY ?? 25}% ({newArtFocalCrop?.focusTarget === 'face' ? 'Gương mặt/Mái tóc' : 'Trung tâm'})
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-4 bg-slate-50 rounded-2xl space-y-3 border border-slate-200">
@@ -1508,6 +1555,16 @@ export const AdminCmsView: React.FC<AdminCmsViewProps> = ({
           </div>
         </div>
       )}
+      {/* Smart Auto Crop & Focal Tool Modal */}
+      <SmartImageCropModal
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        initialImageUrl={newArtCover}
+        onApplyCrop={(croppedUrl, settings) => {
+          setNewArtCover(croppedUrl);
+          setNewArtFocalCrop(settings);
+        }}
+      />
     </div>
   );
 };

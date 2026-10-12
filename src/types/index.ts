@@ -1,4 +1,14 @@
-export type CategoryType = 'all' | 'hair_female' | 'hair_male' | 'nail' | 'makeup';
+export type CategoryType = 'all' | 'hair_female' | 'hair_male' | 'nail' | 'makeup' | 'spa_skincare';
+
+export type VipTier = 'free' | 'pro' | 'vip_gold' | 'vip_diamond';
+
+export interface FocalCropSettings {
+  aspectRatio: '5:3' | '1:1' | '4:5' | '16:9';
+  focalX: number; // 0 to 100 percentage
+  focalY: number; // 0 to 100 percentage
+  zoom: number; // 1 to 2.5
+  focusTarget: 'face' | 'center' | 'nail' | 'custom';
+}
 
 export type HanoiDistrict = 
   | 'Tất cả Hà Nội'
@@ -51,6 +61,11 @@ export interface Salon {
   longitude?: number;
   distanceKm?: number;
   proPlanActive?: boolean;
+  // VIP & Verified Partner Account
+  isVip?: boolean;
+  vipTier?: VipTier;
+  vipBadgeText?: string;
+  servicesProvided?: CategoryType[];
 }
 
 export interface Post {
@@ -211,4 +226,5 @@ export interface Article {
   relatedSalonName?: string;
   relatedPostId?: string;
   tags: string[];
+  focalCrop?: FocalCropSettings;
 }

@@ -52,7 +52,11 @@ export const INITIAL_SALONS: Salon[] = [
     latitude: 21.0268,
     longitude: 105.8492,
     distanceKm: 0.8,
-    proPlanActive: true
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_diamond',
+    vipBadgeText: 'VIP Kim Cương ⭐ toidep.net',
+    servicesProvided: ['hair_female']
   },
   {
     id: 'salon-2',
@@ -92,7 +96,11 @@ export const INITIAL_SALONS: Salon[] = [
     latitude: 21.0335,
     longitude: 105.8488,
     distanceKm: 1.1,
-    proPlanActive: true
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_gold',
+    vipBadgeText: 'VIP Vàng ⭐ Đối Tác Uy Tín',
+    servicesProvided: ['hair_male']
   },
   {
     id: 'salon-3',
@@ -132,7 +140,11 @@ export const INITIAL_SALONS: Salon[] = [
     latitude: 21.0125,
     longitude: 105.8510,
     distanceKm: 1.8,
-    proPlanActive: true
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_diamond',
+    vipBadgeText: 'VIP Kim Cương ⭐ toidep.net',
+    servicesProvided: ['nail']
   },
   {
     id: 'salon-4',
@@ -171,7 +183,140 @@ export const INITIAL_SALONS: Salon[] = [
     latitude: 21.0348,
     longitude: 105.7952,
     distanceKm: 4.2,
-    proPlanActive: false
+    proPlanActive: true,
+    isVip: false,
+    vipTier: 'pro',
+    vipBadgeText: 'Salon Pro',
+    servicesProvided: ['hair_female']
+  },
+  {
+    id: 'salon-5',
+    slug: 'rose-de-paris-makeup-bridal',
+    name: 'Rose de Paris Bridal & Makeup Studio',
+    isVerified: true,
+    avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80',
+    address: '68 Kim Mã, Ba Đình, Hà Nội',
+    district: 'Ba Đình',
+    phone: '0915 888 666',
+    openHours: '08:00 - 20:30',
+    rating: 4.97,
+    reviewsCount: 182,
+    description: 'Chuyên trang điểm cô dâu tone trong trẻo Hàn Quốc, makeup dự tiệc và kỷ yếu tôn đường nét tự nhiên. Mỹ phẩm chính hãng cao cấp.',
+    priceItems: [
+      { name: 'Makeup Dự Tiệc Nâng Cao + Làm Tóc Sang Trọng', price: '450.000đ', duration: '60 phút', category: 'makeup' },
+      { name: 'Makeup Cô Dâu Ngày Cưới Tone Tự Nhiên & Dặm Phấn', price: '1.200.000đ - 2.500.000đ', duration: '90 phút', category: 'makeup' },
+      { name: 'Makeup Chụp Ảnh Lookbook / Kỷ Yếu', price: '350.000đ', duration: '45 phút', category: 'makeup' }
+    ],
+    stylists: [
+      {
+        id: 'stylist-6',
+        name: 'Hải Yến (Rose Makeup)',
+        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
+        title: 'Senior MUA · 9 năm kinh nghiệm',
+        experienceYears: 9,
+        salonId: 'salon-5',
+        salonName: 'Rose de Paris Bridal & Makeup Studio',
+        rating: 4.98,
+        reviewsCount: 145,
+        specialties: ['Makeup sương mai Hàn Quốc', 'Kẻ mắt tự nhiên', 'Tạo khối thon gọn'],
+        bio: 'Đạt giải Cọ Vàng Makeup Artist 2024. Chuyên nền mỏng mịn căng bóng bền màu cả ngày.'
+      }
+    ],
+    latitude: 21.0320,
+    longitude: 105.8285,
+    distanceKm: 2.3,
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_diamond',
+    vipBadgeText: 'VIP Kim Cương ⭐ toidep.net',
+    servicesProvided: ['makeup']
+  },
+  {
+    id: 'salon-6',
+    slug: 'an-yen-duong-sinh-spa',
+    name: 'An Yên Dưỡng Sinh & Spa Thảo Dược',
+    isVerified: true,
+    avatar: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+    address: '112 Chùa Bộc, Đống Đa, Hà Nội',
+    district: 'Đống Đa',
+    phone: '0963 222 111',
+    openHours: '09:00 - 22:00',
+    rating: 4.93,
+    reviewsCount: 204,
+    description: 'Gội đầu dưỡng sinh Trung Hoa cổ truyền, đả thông kinh lạc vai gáy với nước lá thảo mộc đun sôi tại chỗ và xông ngải cứu thư giãn sâu.',
+    priceItems: [
+      { name: 'Combo Gội Đầu Dưỡng Sinh Thảo Dược 60 phút', price: '199.000đ', duration: '60 phút', category: 'spa_skincare' },
+      { name: 'Liệu trình Trị Liệu Cổ Vai Gáy Chuyên Sâu + Đắp Bùn Cứu', price: '350.000đ', duration: '75 phút', category: 'spa_skincare' },
+      { name: 'Chăm sóc da mặt chuẩn Y Khoa cấp ẩm tầng sâu', price: '280.000đ', duration: '60 phút', category: 'spa_skincare' }
+    ],
+    stylists: [
+      {
+        id: 'stylist-7',
+        name: 'Trang Thu',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+        title: 'Chuyên viên Dưỡng Sinh · 5 năm kinh nghiệm',
+        experienceYears: 5,
+        salonId: 'salon-6',
+        salonName: 'An Yên Dưỡng Sinh & Spa Thảo Dược',
+        rating: 4.94,
+        reviewsCount: 168,
+        specialties: ['Bấm huyệt đầu vai gáy', 'Gội đầu dưỡng sinh', 'Thải độc da'],
+        bio: 'Đôi tay mềm mại, lực bấm chuẩn huyệt đạo giúp giải tỏa căng thẳng triệt để sau giờ làm việc.'
+      }
+    ],
+    latitude: 21.0090,
+    longitude: 105.8280,
+    distanceKm: 2.9,
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_gold',
+    vipBadgeText: 'VIP Vàng ⭐ Đối Tác Uy Tín',
+    servicesProvided: ['spa_skincare']
+  },
+  {
+    id: 'salon-7',
+    slug: 'maison-westlake-hair-day-spa',
+    name: 'Maison Westlake Hair & Day Spa',
+    isVerified: true,
+    avatar: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+    address: '28 Quảng An, Tây Hồ, Hà Nội',
+    district: 'Tây Hồ',
+    phone: '0903 456 789',
+    openHours: '09:00 - 21:00',
+    rating: 4.96,
+    reviewsCount: 175,
+    description: 'Không gian làm đẹp cao cấp view Hồ Tây lộng gió. Kết hợp dịch vụ tóc chuẩn salon Paris và spa thư giãn cho khách hàng và người nước ngoài.',
+    priceItems: [
+      { name: 'Cắt tóc tạo kiểu chuyên gia Stylist Pháp & Sấy kiểu', price: '450.000đ', duration: '60 phút', category: 'hair_female' },
+      { name: 'Nhuộm Balayage Ombre Chuẩn Tone Tây Cao Cấp', price: '1.500.000đ - 2.800.000đ', duration: '180 phút', category: 'hair_female' },
+      { name: 'Liệu trình Phục Hồi Tóc & Da Đầu Thải Độc Organics', price: '650.000đ', duration: '75 phút', category: 'spa_skincare' }
+    ],
+    stylists: [
+      {
+        id: 'stylist-8',
+        name: 'Alexandre Vũ',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+        title: 'Creative Art Director · 12 năm kinh nghiệm',
+        experienceYears: 12,
+        salonId: 'salon-7',
+        salonName: 'Maison Westlake Hair & Day Spa',
+        rating: 4.99,
+        reviewsCount: 132,
+        specialties: ['Balayage & Babylights', 'Tóc ngắn cá tính', 'Chăm sóc da đầu'],
+        bio: 'Từng làm việc tại Paris và Tokyo Fashion Week. Tỉ mỉ và cầu toàn trong từng chi tiết tạo mẫu.'
+      }
+    ],
+    latitude: 21.0610,
+    longitude: 105.8270,
+    distanceKm: 4.1,
+    proPlanActive: true,
+    isVip: true,
+    vipTier: 'vip_diamond',
+    vipBadgeText: 'VIP Kim Cương ⭐ toidep.net',
+    servicesProvided: ['hair_female', 'spa_skincare']
   }
 ];
 

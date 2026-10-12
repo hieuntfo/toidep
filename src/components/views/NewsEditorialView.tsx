@@ -121,6 +121,12 @@ export const NewsEditorialView: React.FC<NewsEditorialViewProps> = ({
               src={featuredArticle.coverImage}
               alt={featuredArticle.title}
               className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+              style={{
+                objectPosition: featuredArticle.focalCrop 
+                  ? `${featuredArticle.focalCrop.focalX}% ${featuredArticle.focalCrop.focalY}%` 
+                  : '50% 25%',
+                transform: featuredArticle.focalCrop ? `scale(${featuredArticle.focalCrop.zoom})` : undefined
+              }}
             />
             <div className="absolute top-4 left-4">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E4576E] text-white shadow-md">
@@ -199,6 +205,12 @@ export const NewsEditorialView: React.FC<NewsEditorialViewProps> = ({
                     src={art.coverImage}
                     alt={art.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    style={{
+                      objectPosition: art.focalCrop 
+                        ? `${art.focalCrop.focalX}% ${art.focalCrop.focalY}%` 
+                        : '50% 25%',
+                      transform: art.focalCrop ? `scale(${art.focalCrop.zoom})` : undefined
+                    }}
                   />
                   <div className="absolute top-3 left-3">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white border border-white/20">

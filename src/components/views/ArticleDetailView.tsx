@@ -195,15 +195,21 @@ export const ArticleDetailView: React.FC<ArticleDetailViewProps> = ({
 
       {/* Hero Cover Image (Full Width High Impact) */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-12">
-        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200 aspect-[5/3] bg-black">
           <img
             src={article.coverImage}
             alt={article.title}
-            className="w-full max-h-[580px] object-cover"
+            className="w-full h-full object-cover"
+            style={{
+              objectPosition: article.focalCrop
+                ? `${article.focalCrop.focalX}% ${article.focalCrop.focalY}%`
+                : '50% 25%',
+              transform: article.focalCrop ? `scale(${article.focalCrop.zoom})` : undefined
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-6 text-white text-xs">
             <span className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20">
-              Trình diễn hình ảnh độc quyền tại toidep.net · Bộ sưu tập Thu Đông
+              Trình diễn hình ảnh độc quyền tại toidep.net · Cắt chuẩn tỉ lệ 5:3 không méo hình
             </span>
           </div>
         </div>
