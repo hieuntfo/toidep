@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bookmark, Calendar, Clock, CheckCircle, MapPin, Scissors, Tag, ArrowRight, Sparkles, User, LogIn } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Bookmark, Calendar, Clock, CheckCircle, MapPin, Scissors, Tag, ArrowRight, Sparkles, User, LogIn, Mail, Inbox, CheckCircle2 } from 'lucide-react';
 import { Post, BookingRequest, Salon, UserProfile } from '../../types';
 
 interface UserProfileViewProps {
@@ -21,12 +21,23 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   currentUser,
   onOpenAuthModal
 }) => {
-  const [activeTab, setActiveTab] = useState<'saved' | 'bookings'>('saved');
+  const [activeTab, setActiveTab] = useState<'saved' | 'bookings' | 'emails'>('saved');
 
   const displayName = currentUser?.fullName || 'Phương Thảo';
   const displayAvatar = currentUser?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80';
   const displayBio = currentUser?.bio || 'Hà Nội · Đam mê các kiểu tóc layer tự nhiên & nail thạch syrup nhẹ nhàng';
   const isSalonPro = currentUser?.role === 'salon_pro';
+
+  // Retrieve user system emails (e.g. registration welcome & activation email)
+  const userEmails = useMemo(() => {
+    if (!currentUser?.id) return [];
+    try {
+      const saved = localStorage.getItem(`toidep_user_emails_${currentUser.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  }, [currentUser?.id]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -105,6 +116,18 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         >
           <Calendar className="w-4 h-4" />
           <span>Lịch hẹn của tôi ({bookings.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('emails')}
+          className={`py-3 border-b-2 flex items-center gap-2 transition-colors ${
+            activeTab === 'emails'
+              ? 'border-[#E4576E] text-[#E4576E]'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          <span>Hộp thư & Email xác nhận ({userEmails.length})</span>
         </button>
       </div>
 
@@ -206,6 +229,54 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {/* Tab Content: System Emails & Activation Notice */}
+      {activeTab === 'emails' && (
+        <div className="space-y-4">
+          {userEmails.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 space-y-2">
+              <Mail className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-xs text-slate-500 font-semibold">Hộp thư thông báo của bạn đang trống.</p>
+              <p className="text-[11px] text-slate-400">Khi đăng ký tài khoản mới hoặc đặt lịch, các email xác nhận & mã kích hoạt sẽ được lưu trữ tại đây.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {userEmails.map((mail: any) => (
+                <div key={mail.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{mail.subject}</h4>
+                        <div className="text-[11px] text-slate-400">Người gửi: <strong>support@toidep.net</strong></div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono sm:text-right">{mail.sentAt}</span>
+                  </div>
+
+                  {mail.activationCode && (
+                    <div className="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Mã xác thực kích hoạt:</span>
+                        <span className="font-mono font-bold text-sm text-[#E4576E] tracking-wider">{mail.activationCode}</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        Đã xác thực
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    {mail.content}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

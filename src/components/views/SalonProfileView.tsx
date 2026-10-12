@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   CheckCircle, Star, MapPin, Phone, Clock, 
-  Scissors, Tag, Calendar, Sparkles, ArrowRight, ShieldCheck, User 
+  Scissors, Tag, Calendar, Sparkles, ArrowRight, ShieldCheck, User,
+  Share2
 } from 'lucide-react';
 import { Salon, Post, Review, UserProfile } from '../../types';
 
@@ -31,6 +32,29 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   onRequireLogin
 }) => {
   const [activeTab, setActiveTab] = useState<'lookbook' | 'prices' | 'stylists' | 'reviews'>('lookbook');
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share && navigator.canShare && navigator.canShare({ url })) {
+      try {
+        await navigator.share({
+          title: `${salon.name} — toidep.net`,
+          text: `Khám phá trang salon ${salon.name} trên toidep.net`,
+          url
+        });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    } catch {
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    }
+  };
 
   const handleFollowClick = () => {
     if (!currentUser) {
@@ -120,6 +144,15 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                   <span>Đặt lịch hẹn</span>
                 </button>
               )}
+
+              <button
+                onClick={handleShare}
+                className="px-3.5 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                title="Sao chép link chia sẻ trang salon"
+              >
+                <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                <span>{copiedShare ? 'Đã chép link!' : 'Chia sẻ'}</span>
+              </button>
             </div>
           </div>
 

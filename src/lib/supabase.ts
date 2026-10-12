@@ -779,6 +779,40 @@ export async function upsertUserToSupabase(
 }
 
 /**
+ * Delete a user from Supabase (both user_profiles and posts backup)
+ */
+export async function deleteUserFromSupabase(
+  userId: string,
+  url = DEFAULT_SUPABASE_URL,
+  key = SUPABASE_SECRET_KEY || SUPABASE_PUBLISHABLE_KEY
+): Promise<boolean> {
+  let ok = false;
+  try {
+    const res1 = await fetch(`${url}/rest/v1/user_profiles?id=eq.${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (res1.ok) ok = true;
+  } catch {}
+
+  try {
+    const res2 = await fetch(`${url}/rest/v1/posts?id=eq.usr_${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    if (res2.ok) ok = true;
+  } catch {}
+
+  return ok;
+}
+
+/**
  * Fetch bookings directly from Supabase REST API
  */
 export async function fetchRemoteBookings(url = DEFAULT_SUPABASE_URL, key = SUPABASE_PUBLISHABLE_KEY): Promise<BookingRequest[] | null> {

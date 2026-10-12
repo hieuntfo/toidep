@@ -169,6 +169,8 @@ export interface UserProfile {
   authProvider: AuthProvider;
   bio?: string;
   address?: string;
+  isBlocked?: boolean;
+  status?: 'active' | 'suspended';
 }
 
 // Editorial / Longform News Article Types

@@ -13,8 +13,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onLoginSuccess
 }) => {
-  const [username, setUsername] = useState('satthucoi');
-  const [password, setPassword] = useState('Deonho@123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,15 +33,9 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         onLoginSuccess(res.user);
         onClose();
       } else {
-        setErrorMsg(res.error || 'Đăng nhập không thành công.');
+        setErrorMsg(res.error || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
       }
     }, 400);
-  };
-
-  const handleFillCredentials = () => {
-    setUsername(OFFICIAL_ADMIN_CREDENTIALS.username);
-    setPassword(OFFICIAL_ADMIN_CREDENTIALS.password);
-    setErrorMsg('');
   };
 
   return (
@@ -71,26 +65,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Quick Credential Hint Callout */}
-          <div className="p-3.5 bg-rose-50 border border-rose-200/80 rounded-2xl text-xs space-y-1.5">
-            <div className="flex items-center justify-between font-bold text-rose-900">
-              <span className="flex items-center gap-1">
-                <KeyRound className="w-3.5 h-3.5 text-[#E4576E]" /> Thông tin đăng nhập tài khoản:
-              </span>
-              <button
-                type="button"
-                onClick={handleFillCredentials}
-                className="text-[10px] bg-white border border-rose-300 text-[#E4576E] px-2 py-0.5 rounded-md hover:bg-rose-50 font-bold"
-              >
-                Tự động điền
-              </button>
-            </div>
-            <div className="text-[11px] font-mono text-slate-700 space-y-0.5">
-              <div>User: <strong>satthucoi</strong></div>
-              <div>Pass: <strong>Deonho@123</strong></div>
-            </div>
-          </div>
-
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-500" /> Tên đăng nhập admin
@@ -101,7 +75,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-[#E4576E] font-medium text-slate-900"
-              placeholder="satthucoi"
+              placeholder="Nhập tên đăng nhập quản trị"
+              autoComplete="username"
             />
           </div>
 
@@ -116,6 +91,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-[#E4576E] font-medium text-slate-900"
               placeholder="••••••••••••"
+              autoComplete="current-password"
             />
           </div>
 

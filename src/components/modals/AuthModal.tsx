@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { 
   X, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, 
   Sparkles, ShieldCheck, ArrowRight, Eye, EyeOff, Building2,
-  ExternalLink
+  ExternalLink, Inbox, Check
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../../types';
+import { upsertUserToSupabase } from '../../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile | null;
-  onLogin: (user: UserProfile) => void;
+  onLogin: (user: UserProfile, isNewUser?: boolean) => void;
   onLogout: () => void;
   initialMode?: 'login' | 'register' | 'forgot';
   authNotice?: string;
@@ -29,6 +30,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [registeredEmailInfo, setRegisteredEmailInfo] = useState<{
+    email: string;
+    name: string;
+    code: string;
+    role: UserRole;
+    user: UserProfile;
+  } | null>(null);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -121,6 +129,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     let usersList: UserProfile[] = savedUsersStr ? JSON.parse(savedUsersStr) : [];
 
     const isSalonPro = regRole === 'salon_pro';
+    const activationCode = `TOIDEP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newUser: UserProfile = {
       id: `usr-${Date.now()}`,
@@ -140,16 +149,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         : 'Người dùng yêu thích làm đẹp tại Hà Nội'
     };
 
+    // Guarantee that new registered user has 0 saved/liked services initially!
+    localStorage.setItem(`toidep_saved_ids_${newUser.id}`, JSON.stringify([]));
+    localStorage.setItem(`toidep_liked_ids_${newUser.id}`, JSON.stringify([]));
+    localStorage.setItem(`toidep_followed_ids_${newUser.id}`, JSON.stringify([]));
+
+    // Create & dispatch welcome activation email
+    const welcomeEmail = {
+      id: `mail-${Date.now()}`,
+      toEmail: regEmail,
+      toName: regFullName,
+      subject: '🎉 Chào mừng bạn gia nhập toidep.net - Kích hoạt tài khoản thành công',
+      sentAt: new Date().toLocaleString('vi-VN'),
+      role: regRole,
+      activationCode,
+      content: `Xin chào ${regFullName},\n\nTài khoản của bạn đã được khởi tạo thành công trên toidep.net với email ${regEmail}.\n\nThông tin tài khoản:\n- Email đăng nhập: ${regEmail}\n- Loại tài khoản: ${regRole === 'salon_pro' ? 'Salon Pro (Đối tác làm đẹp)' : 'Khách hàng'}\n- Mã xác thực thành viên: ${activationCode}\n\n* Lưu ý quan trọng: Tài khoản của bạn là tài khoản mới độc lập, danh sách dịch vụ và tác phẩm lookbook đã lưu ban đầu là 0 mẫu. Bạn có thể tự do bấm nút 'Lưu' hoặc 'Thích' tại các bài đăng lookbook để bắt đầu xây dựng bộ sưu tập của riêng mình!`
+    };
+    const userEmailsKey = `toidep_user_emails_${newUser.id}`;
+    localStorage.setItem(userEmailsKey, JSON.stringify([welcomeEmail]));
+
     usersList.push(newUser);
     localStorage.setItem('toidep_users', JSON.stringify(usersList));
-    onLogin(newUser);
-    setSuccessMsg(isSalonPro 
-      ? 'Đăng ký Salon Pro thành công! Hồ sơ của bạn đã được gửi tới Admin để duyệt gắn Tích Xanh.' 
-      : 'Đăng ký tài khoản thành công!'
-    );
-    setTimeout(() => {
-      onClose();
-    }, 1200);
+
+    // Save directly to Supabase cloud
+    upsertUserToSupabase(newUser).catch(err => console.warn('Supabase new user sync notice:', err));
+
+    // Show Email Dispatch Screen
+    setRegisteredEmailInfo({
+      email: regEmail,
+      name: regFullName,
+      code: activationCode,
+      role: regRole,
+      user: newUser
+    });
   };
 
   // 3rd Party OAuth Simulation (Google / Facebook / Apple)
@@ -254,91 +286,147 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Messages */}
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* MODE: LOGIN */}
-          {mode === 'login' && (
-            <div className="space-y-4">
-              {/* 3rd Party OAuth Buttons */}
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-slate-500 text-center">
-                  Đăng nhập nhanh 1 chạm bằng tài khoản liên kết:
+          {/* SUCCESS DISPATCH SCREEN: REGISTRATION WELCOME EMAIL */}
+          {registeredEmailInfo ? (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>Đăng ký thành công & Đã gửi email xác nhận!</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleThirdPartyOAuth('google')}
-                    className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
-                  >
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    <span>Google</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleThirdPartyOAuth('facebook')}
-                    className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
-                  >
-                    <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                    <span>Facebook</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleThirdPartyOAuth('apple')}
-                    className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
-                  >
-                    <svg className="w-4 h-4 shrink-0 fill-black" viewBox="0 0 24 24">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.12.64-2.79 1.41-.59.68-1.1 1.74-1.01 2.8.07.01 1.9-.3 2.79-1.34z" />
-                    </svg>
-                    <span>Apple</span>
-                  </button>
-                </div>
+                <p className="text-xs text-emerald-900 leading-relaxed">
+                  Hệ thống toidep.net đã gửi thông tin kích hoạt tới địa chỉ email: <strong className="font-mono">{registeredEmailInfo.email}</strong>.
+                </p>
               </div>
 
-              <div className="relative flex items-center justify-center">
-                <div className="border-t border-slate-200 w-full" />
-                <span className="bg-white px-3 text-[11px] text-slate-400 uppercase font-semibold absolute">
-                  Hoặc bằng Email
-                </span>
-              </div>
+              {/* Simulated Inbox Letter Preview */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-slate-500 font-mono text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <Inbox className="w-4 h-4 text-[#E4576E]" />
+                    <span>Hộp thư: <strong>support@toidep.net</strong></span>
+                  </div>
+                  <span>Vừa xong</span>
+                </div>
 
-              <form onSubmit={handleEmailLogin} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Email hoặc Tên đăng nhập
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="text"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="admin@toidep.net hoặc email của bạn"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#E4576E] focus:ring-1 focus:ring-[#E4576E]"
-                    />
+                <div className="space-y-1.5">
+                  <div className="font-bold text-slate-900 text-sm">
+                    🎉 Kích hoạt tài khoản thành viên toidep.net thành công
+                  </div>
+                  <div className="text-slate-600">
+                    Kính gửi: <strong>{registeredEmailInfo.name}</strong> ({registeredEmailInfo.email})
+                  </div>
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-xl space-y-1">
+                    <div className="text-[11px] text-slate-500">Mã kích hoạt thành viên:</div>
+                    <div className="font-mono font-bold text-sm text-[#E4576E] tracking-wider">
+                      {registeredEmailInfo.code}
+                    </div>
+                  </div>
+                  <div className="p-2.5 bg-rose-50/60 border border-rose-100 rounded-xl text-[11px] text-rose-800 leading-relaxed">
+                    ✨ <strong>Tài khoản mới độc lập:</strong> Danh sách lookbook & dịch vụ đã lưu của bạn hiện đang để trống (<strong>0 mẫu</strong>). Hãy thoải mái khám phá các salon và bấm nút <em>Lưu</em> hoặc <em>Thích</em> để xây dựng bộ sưu tập của riêng mình.
                   </div>
                 </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onLogin(registeredEmailInfo.user, true);
+                  onClose();
+                }}
+                className="w-full py-3 bg-[#E4576E] hover:bg-[#d84860] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <span>Bắt đầu trải nghiệm ngay (0 Mẫu lưu)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Messages */}
+              {errorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {successMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{successMsg}</span>
+                </div>
+              )}
+
+              {/* MODE: LOGIN */}
+              {mode === 'login' && (
+                <div className="space-y-4">
+                  {/* 3rd Party OAuth Buttons */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-slate-500 text-center">
+                      Đăng nhập nhanh 1 chạm bằng tài khoản liên kết:
+                    </div>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => handleThirdPartyOAuth('google')}
+                        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Google</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleThirdPartyOAuth('facebook')}
+                        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
+                      >
+                        <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        <span>Facebook</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleThirdPartyOAuth('apple')}
+                        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all shadow-2xs"
+                      >
+                        <svg className="w-4 h-4 shrink-0 fill-black" viewBox="0 0 24 24">
+                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.12.64-2.79 1.41-.59.68-1.1 1.74-1.01 2.8.07.01 1.9-.3 2.79-1.34z" />
+                        </svg>
+                        <span>Apple</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center justify-center">
+                    <div className="border-t border-slate-200 w-full" />
+                    <span className="bg-white px-3 text-[11px] text-slate-400 uppercase font-semibold absolute">
+                      Hoặc bằng Email
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleEmailLogin} className="space-y-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Email hoặc Tên đăng nhập
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          placeholder="email@vidu.com hoặc tên tài khoản"
+                          className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#E4576E] focus:ring-1 focus:ring-[#E4576E]"
+                        />
+                      </div>
+                    </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -624,6 +712,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
